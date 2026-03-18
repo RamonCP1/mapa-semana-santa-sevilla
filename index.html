@@ -1,0 +1,2533 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa Interactivo Procesiones Semana Santa Sevilla 2026 | Sevilla de Turismo</title>
+<meta name="description" content="Mapa interactivo con los recorridos y horarios de todas las procesiones de la Semana Santa de Sevilla 2026. Filtra por día y hermandad.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+/* ============================================
+   MAPA PROCESIONES SEMANA SANTA - SEVILLA DE TURISMO
+   ============================================ */
+
+/* --- RESET & BASE --- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --gold: #F5B731;
+  --gold-dark: #D4A028;
+  --gold-light: #FFF3D6;
+  --burgundy: #6B1D2A;
+  --burgundy-dark: #4A0E1A;
+  --ivory: #FDFBF5;
+  --cream: #F9F5EA;
+  --charcoal: #1A1A1A;
+  --text-dark: #2C2C2C;
+  --text-muted: #6B6B6B;
+  --text-light: #9A9A9A;
+  --border: #E5DFD0;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Source Sans 3', 'Segoe UI', sans-serif;
+  --transition: 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-dark);
+  background-color: var(--ivory);
+}
+
+/* --- HEADER --- */
+.site-header {
+  background: var(--charcoal);
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+}
+
+.logo-link {
+  text-decoration: none;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.logo-text {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  color: #fff;
+}
+
+.logo-accent {
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: 15px;
+  color: var(--gold);
+}
+
+.header-nav a {
+  color: rgba(255,255,255,0.7);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color var(--transition);
+}
+.header-nav a:hover { color: var(--gold); }
+
+/* --- HERO --- */
+.hero {
+  background: linear-gradient(135deg, var(--burgundy-dark) 0%, var(--burgundy) 100%);
+  padding: 48px 24px 40px;
+  text-align: center;
+}
+
+.hero-inner {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.hero-eyebrow {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 5vw, 44px);
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.15;
+  margin-bottom: 12px;
+}
+
+.hero-subtitle {
+  font-size: 16px;
+  font-weight: 300;
+  color: rgba(255,255,255,0.75);
+  max-width: 550px;
+  margin: 0 auto;
+}
+
+/* --- CONTROLS --- */
+.controls-section {
+  padding: 24px 24px 16px;
+  background: var(--cream);
+  border-bottom: 1px solid var(--border);
+}
+
+.controls-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.day-selector {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.day-selector::-webkit-scrollbar { height: 4px; }
+.day-selector::-webkit-scrollbar-track { background: transparent; }
+.day-selector::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.day-btn {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  background: #fff;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: all var(--transition);
+  min-width: 100px;
+}
+
+.day-btn:hover {
+  border-color: var(--gold);
+  background: var(--gold-light);
+}
+
+.day-btn.active {
+  background: var(--gold);
+  border-color: var(--gold-dark);
+  color: var(--charcoal);
+}
+
+.day-btn-label {
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.day-btn-date {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.day-btn.active .day-btn-date {
+  color: rgba(0,0,0,0.6);
+}
+
+.day-description {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 8px 0 16px;
+  line-height: 1.5;
+}
+
+/* Brotherhood chips */
+.brotherhood-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.brotherhood-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  border: 2px solid transparent;
+  background: #fff;
+  color: var(--text-dark);
+}
+
+.brotherhood-chip .chip-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.brotherhood-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.brotherhood-chip.active {
+  border-color: currentColor;
+  font-weight: 600;
+}
+
+.brotherhood-chip.dimmed {
+  opacity: 0.35;
+}
+
+/* --- MAP --- */
+.map-section {
+  position: relative;
+  height: 600px;
+  border-bottom: 1px solid var(--border);
+}
+
+@media (max-width: 768px) {
+  .map-section { height: 450px; }
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+/* Leaflet popup custom */
+.leaflet-popup-content-wrapper {
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-lg) !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  font-family: var(--font-body) !important;
+  font-size: 14px !important;
+  min-width: 200px !important;
+}
+
+.popup-header {
+  background: var(--charcoal);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.popup-header h4 {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.popup-header .popup-brotherhood {
+  font-size: 12px;
+  color: var(--gold);
+  margin-top: 2px;
+}
+
+.popup-body {
+  padding: 10px 14px;
+}
+
+.popup-time {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--burgundy);
+  font-family: var(--font-display);
+}
+
+.popup-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Legend */
+.map-legend {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(8px);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-lg);
+  z-index: 800;
+  max-width: 260px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.legend-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--charcoal);
+}
+
+.legend-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-dark);
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.legend-item:hover { color: var(--charcoal); }
+
+.legend-color {
+  width: 18px;
+  height: 4px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legend-carrera {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.legend-carrera-line {
+  width: 18px;
+  height: 4px;
+  background: var(--gold);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .map-legend {
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    max-width: none;
+    max-height: 150px;
+  }
+  .legend-items {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+/* --- INFO SECTION --- */
+.info-section {
+  padding: 32px 24px 48px;
+  background: #fff;
+}
+
+.info-inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.info-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--charcoal);
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 3px solid var(--gold);
+  display: inline-block;
+}
+
+.info-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.timeline-stop {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  position: relative;
+  padding: 12px 0;
+}
+
+.timeline-stop:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 19px;
+  top: 36px;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+
+.timeline-stop.is-carrera::after {
+  background: var(--gold);
+}
+
+.timeline-dot-wrapper {
+  flex-shrink: 0;
+  width: 40px;
+  display: flex;
+  justify-content: center;
+  padding-top: 2px;
+}
+
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--border);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px var(--border);
+  position: relative;
+  z-index: 1;
+}
+
+.timeline-stop.is-start .timeline-dot {
+  background: var(--burgundy);
+  box-shadow: 0 0 0 2px var(--burgundy);
+  width: 14px;
+  height: 14px;
+}
+
+.timeline-stop.is-end .timeline-dot {
+  background: var(--charcoal);
+  box-shadow: 0 0 0 2px var(--charcoal);
+  width: 14px;
+  height: 14px;
+}
+
+.timeline-stop.is-carrera .timeline-dot {
+  background: var(--gold);
+  box-shadow: 0 0 0 2px var(--gold-dark);
+}
+
+.timeline-content {
+  flex: 1;
+}
+
+.timeline-time {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--burgundy);
+  font-family: var(--font-display);
+  line-height: 1;
+}
+
+.timeline-name {
+  font-size: 14px;
+  color: var(--text-dark);
+  margin-top: 2px;
+}
+
+.timeline-stop.is-carrera .timeline-name {
+  font-weight: 600;
+  color: var(--gold-dark);
+}
+
+.timeline-carrera-badge {
+  display: inline-block;
+  background: var(--gold-light);
+  color: var(--gold-dark);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* --- FOOTER --- */
+.site-footer {
+  background: var(--charcoal);
+  padding: 24px;
+  text-align: center;
+}
+
+.footer-inner {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.footer-inner p {
+  color: rgba(255,255,255,0.5);
+  font-size: 12px;
+  max-width: 100%;
+}
+
+.footer-attribution {
+  display: inline-block;
+  margin-top: 8px;
+  color: rgba(255,255,255,0.35);
+  font-size: 11px;
+  text-decoration: none;
+}
+.footer-attribution:hover { color: rgba(255,255,255,0.6); }
+
+/* Custom markers */
+.custom-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.marker-start, .marker-end {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.marker-waypoint {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+/* Animated carrera oficial line */
+.carrera-oficial-line {
+  stroke-dasharray: 12 6;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .hero { padding: 32px 16px 28px; }
+  .hero-title { font-size: 26px; }
+  .controls-section { padding: 16px; }
+  .day-btn { min-width: 85px; padding: 8px 10px; }
+  .day-btn-label { font-size: 12px; }
+  .info-section { padding: 24px 16px; }
+  .info-title { font-size: 20px; }
+}
+
+</style>
+</head>
+<body>
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="https://www.sevilladeturismo.com" class="logo-link" target="_blank" rel="noopener noreferrer">
+        <span class="logo-text">Sevilla</span><span class="logo-accent">de Turismo</span>
+      </a>
+      <nav class="header-nav">
+        <a href="https://www.sevilladeturismo.com/semana-santa-sevilla" target="_blank" rel="noopener noreferrer">Gu&iacute;a Semana Santa</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <p class="hero-eyebrow">Semana Santa 2026 &middot; 29 marzo &ndash; 5 abril</p>
+      <h1 class="hero-title">Mapa Interactivo de Procesiones</h1>
+      <p class="hero-subtitle">Recorridos, horarios y puntos clave de todas las hermandades, d&iacute;a a d&iacute;a</p>
+    </div>
+  </section>
+
+  <!-- CONTROLS -->
+  <section class="controls-section">
+    <div class="controls-inner">
+      <div class="day-selector" id="daySelector">
+        <button class="day-btn active" data-day="Domingo de Ramos">
+          <span class="day-btn-label">Dom. Ramos</span>
+          <span class="day-btn-date">29 mar</span>
+        </button>
+        <button class="day-btn" data-day="Lunes Santo">
+          <span class="day-btn-label">Lunes Santo</span>
+          <span class="day-btn-date">30 mar</span>
+        </button>
+        <button class="day-btn" data-day="Martes Santo">
+          <span class="day-btn-label">Martes Santo</span>
+          <span class="day-btn-date">31 mar</span>
+        </button>
+        <button class="day-btn" data-day="Mi&eacute;rcoles Santo">
+          <span class="day-btn-label">Mi&eacute;rc. Santo</span>
+          <span class="day-btn-date">1 abr</span>
+        </button>
+        <button class="day-btn" data-day="Jueves Santo">
+          <span class="day-btn-label">Jueves Santo</span>
+          <span class="day-btn-date">2 abr</span>
+        </button>
+        <button class="day-btn" data-day="La Madrugá">
+          <span class="day-btn-label">La Madrugá</span>
+          <span class="day-btn-date">3 abr</span>
+        </button>
+        <button class="day-btn" data-day="Viernes Santo">
+          <span class="day-btn-label">Viernes Santo</span>
+          <span class="day-btn-date">3 abr</span>
+        </button>
+        <button class="day-btn" data-day="S&aacute;bado Santo">
+          <span class="day-btn-label">S&aacute;bado Santo</span>
+          <span class="day-btn-date">4 abr</span>
+        </button>
+        <button class="day-btn" data-day="Domingo de Resurrección">
+          <span class="day-btn-label">Resurrección</span>
+          <span class="day-btn-date">5 abr</span>
+        </button>
+      </div>
+      <p class="day-description" id="dayDescription"></p>
+      <div class="brotherhood-chips" id="brotherhoodChips"></div>
+    </div>
+  </section>
+
+  <!-- MAP -->
+  <section class="map-section">
+    <div id="map"></div>
+    <div class="map-legend" id="mapLegend">
+      <h3 class="legend-title">Leyenda</h3>
+      <div class="legend-items" id="legendItems"></div>
+      <div class="legend-carrera">
+        <span class="legend-carrera-line"></span>
+        <span>Carrera Oficial</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- INFO PANEL -->
+  <section class="info-section" id="infoSection" style="display:none;">
+    <div class="info-inner">
+      <h2 class="info-title" id="infoTitle"></h2>
+      <div class="info-timeline" id="infoTimeline"></div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p>&copy; 2026 Sevilla de Turismo. Datos orientativos basados en los horarios oficiales del Consejo de Hermandades y Cofrad&iacute;as de Sevilla.</p>
+    </div>
+  </footer>
+
+  <script>
+// Coordenadas de puntos clave en Sevilla para los recorridos procesionales
+const LOCATIONS = {
+  // --- CARRERA OFICIAL ---
+  "Campana": [37.3907, -5.9965],
+  "Sierpes": [37.3890, -5.9960],
+  "Plaza": [37.3858, -5.9935], // Plaza Virgen de los Reyes
+  "Puerta de San Miguel": [37.3856, -5.9929],
+  "San Miguel": [37.3856, -5.9929],
+  "Puerta de Palos": [37.3853, -5.9918],
+  "Palos": [37.3853, -5.9918],
+
+  // --- CALLES Y PLAZAS ---
+  "Pl. Salvador": [37.3882, -5.9925],
+  "Pl. del Salvador": [37.3882, -5.9925],
+  "Cuna": [37.3902, -5.9940],
+  "Amor de Dios": [37.3920, -5.9950],
+  "Pl. los Terceros": [37.3935, -5.9900],
+  "Imagen": [37.3930, -5.9920],
+  "Encarnación": [37.3920, -5.9940],
+  "Pl. Encarnación": [37.3920, -5.9940],
+  "Javier Lasso de la Vega": [37.3910, -5.9955],
+  "Zaragoza": [37.3870, -6.0005],
+  "San Pablo": [37.3888, -6.0005],
+  "Pl. Magdalena": [37.3888, -5.9990],
+  "Velázquez": [37.3898, -5.9978],
+  "Adolfo Rodríguez Jurado": [37.3855, -5.9970],
+  "Dos de Mayo": [37.3850, -5.9980],
+  "Real de la Carretería": [37.3845, -5.9985],
+  "Gamazo": [37.3860, -6.0010],
+  "Fray Bartolomé de las Casas": [37.3870, -6.0020],
+  "Relator": [37.3970, -5.9910],
+  "Feria": [37.3960, -5.9920],
+  "Correduría": [37.3950, -5.9930],
+  "Alameda de Hércules": [37.3950, -5.9960],
+  "Trajano": [37.3930, -5.9970],
+  "Pl. Duque": [37.3918, -5.9970],
+  "Avda. Borbolla": [37.3760, -5.9830],
+  "Pl. España": [37.3770, -5.9870],
+  "Palos de la Frontera": [37.3795, -5.9920],
+  "Avda. Constitución": [37.3835, -5.9950],
+  "Postigo del Aceite": [37.3840, -5.9970],
+  "Harinas": [37.3850, -5.9990],
+  "Barcelona": [37.3870, -5.9985],
+  "Plaza Nueva": [37.3878, -5.9980],
+  "Miguel Mañara": [37.3840, -5.9900],
+  "Avda. Roma": [37.3810, -5.9910],
+  "Glorieta Covadonga": [37.3750, -5.9850],
+  "Brasil": [37.3735, -5.9840],
+  "Puñonrrostro": [37.3940, -5.9890],
+  "Ponce de León": [37.3940, -5.9900],
+  "Orfila": [37.3915, -5.9950],
+  "Argote de Molina": [37.3867, -5.9920],
+  "Cuesta del Rosario": [37.3895, -5.9910],
+  "Odreros": [37.3893, -5.9905],
+  "Caballerizas": [37.3900, -5.9890],
+  "Medinaceli": [37.3910, -5.9880],
+  "Guadalupe": [37.3920, -5.9870],
+  "San Jacinto": [37.3830, -6.0060],
+  "Reyes Católicos": [37.3860, -6.0020],
+  "Rioja": [37.3900, -5.9990],
+  "Fray Ceferino González": [37.3843, -5.9965],
+  "Arfe": [37.3845, -5.9975],
+  "Adriano": [37.3852, -6.0000],
+  "Pastor y Landero": [37.3855, -6.0015],
+  "Puente de Triana": [37.3840, -6.0040],
+  "Puente Isabel Ii": [37.3840, -6.0040],
+  "Francos": [37.3878, -5.9930],
+  "Pl. Cristo de Burgos": [37.3920, -5.9895],
+  "Doña María Coronel": [37.3935, -5.9895],
+  "San Marcos": [37.3945, -5.9895],
+  "Sol": [37.3955, -5.9890],
+  "Santa Ángela de la Cruz": [37.3935, -5.9920],
+  "San Juan de la Palma": [37.3940, -5.9935],
+  "Alfalfa": [37.3895, -5.9895],
+
+  // --- LUNES SANTO ---
+  "Avda. Pedro Romero": [37.3780, -5.9710],
+  "Doctor Laffón Soto": [37.3790, -5.9730],
+  "Avda. Soleá": [37.3820, -5.9750],
+  "Sinaí": [37.3840, -5.9770],
+  "Luis Montoto": [37.3870, -5.9810],
+  "San Esteban": [37.3885, -5.9860],
+  "Granada": [37.3890, -5.9925],
+  "Tetuán": [37.3900, -5.9970],
+  "Jesús de las Tres Caídas": [37.3905, -5.9900],
+  "Valle": [37.3925, -5.9860],
+  "José Laguillo": [37.3930, -5.9850],
+  "Pérez Hervás": [37.3935, -5.9830],
+  "Venecia": [37.3840, -5.9790],
+  "Antonio Filpo Rojas": [37.3830, -5.9760],
+  "Avda. Greco": [37.3815, -5.9750],
+  "Juan de Mesa": [37.3920, -5.9910],
+  "Aponte": [37.3925, -5.9940],
+  "Jesús del Gran Poder": [37.3935, -5.9960],
+  "Álvarez Quintero": [37.3870, -5.9930],
+  "Sales y Ferré": [37.3910, -5.9895],
+  "Dormitorio": [37.3905, -5.9880],
+  "Pl. San Leandro": [37.3900, -5.9870],
+  "Cardenal Cervantes": [37.3910, -5.9865],
+  "Felipe Ii": [37.3745, -5.9810],
+  "Porvenir": [37.3760, -5.9830],
+  "Avda. Isabel la Católica": [37.3770, -5.9845],
+  "Glorieta del Cid": [37.3790, -5.9920],
+  "Puerta del Arenal": [37.3858, -5.9995],
+  "Pl. Triunfo": [37.3842, -5.9895],
+  "San Fernando": [37.3818, -5.9890],
+  "Lonja de la Universidad": [37.3800, -5.9895],
+  "Bogotá": [37.3735, -5.9800],
+  "Pedro Salinas": [37.3725, -5.9790],
+  "Avda. Teatinos": [37.3715, -5.9780],
+  "Placentines": [37.3862, -5.9925],
+  "Pl. Fernando de Herrera": [37.3895, -5.9945],
+  "Altozano": [37.3830, -6.0050],
+  "Pl. Altozano": [37.3830, -6.0050],
+  "Paseo Cristóbal Colón": [37.3835, -6.0020],
+  "Ntra. Sra. de la Salud": [37.3810, -6.0070],
+  "Teniente Borges": [37.3905, -5.9960],
+  "Alfonso Xii": [37.3910, -5.9975],
+  "Virgen de los Buenos Libros": [37.3920, -5.9960],
+  "Castelar": [37.3858, -5.9985],
+  "Méndez Núñez": [37.3900, -5.9980],
+  "Tomás de Ibarra": [37.3843, -5.9955],
+  "Pl. Museo": [37.3910, -6.0000],
+  "Doña Guiomar": [37.3865, -6.0005],
+  "Gravina": [37.3870, -6.0010],
+  "Miguel de Carvajal": [37.3880, -6.0010],
+
+  // --- MARTES SANTO ---
+  "Afán de Ribera": [37.3700, -5.9770],
+  "Avda. Hytasa": [37.3710, -5.9790],
+  "Avda. Ramón y Cajal": [37.3740, -5.9820],
+  "Enramadilla": [37.3770, -5.9850],
+  "Avda. Carlos V": [37.3790, -5.9870],
+  "Puerta de Jerez": [37.3830, -5.9945],
+  "Puerta de la Carne": [37.3870, -5.9845],
+  "Gallinato": [37.3855, -5.9830],
+  "Buhaira": [37.3830, -5.9800],
+  "Aníbal González": [37.3710, -5.9780],
+  "Pl. San Ildefonso": [37.3900, -5.9865],
+  "Laraña": [37.3910, -5.9950],
+  "Águilas": [37.3890, -5.9880],
+  "Candilejo": [37.3890, -5.9910],
+  "Pl. Jesús de la Pasión": [37.3885, -5.9920],
+  "Cano y Cueto": [37.3820, -5.9865],
+  "Santa María la Blanca": [37.3840, -5.9870],
+  "San José": [37.3835, -5.9875],
+  "Paseo Catalina de Ribera": [37.3810, -5.9860],
+  "Muro de los Navarros": [37.3885, -5.9850],
+  "Pl. Pilatos": [37.3895, -5.9870],
+  "Santa Bárbara": [37.3925, -5.9955],
+  "Cardenal Spínola": [37.3918, -5.9975],
+  "Pl. Gavidia": [37.3920, -5.9985],
+  "Chapineros": [37.3878, -5.9918],
+  "O'Donnell": [37.3905, -5.9970],
+  "Cervantes": [37.3908, -5.9960],
+  "Pl. Alianza": [37.3850, -5.9910],
+  "Almirantazgo": [37.3848, -5.9935],
+  "Mateos Gago": [37.3850, -5.9910],
+  "Muñoz y Pabón": [37.3860, -5.9870],
+  "Pl. San Andrés": [37.3925, -5.9950],
+  "Puente de San Bernardo": [37.3815, -5.9850],
+  "San Bernardo": [37.3800, -5.9840],
+
+  // --- MIERCOLES SANTO ---
+  "Leonor Dávalos": [37.3935, -5.9960],
+  "Lineros": [37.3910, -5.9930],
+  "Pl. San Lorenzo": [37.3935, -5.9965],
+  "Pl. Concordia": [37.3930, -5.9975],
+  "Arco del Postigo": [37.3838, -5.9965],
+  "Pedro del Toro": [37.3895, -6.0005],
+  "San Vicente": [37.3920, -5.9995],
+  "Hospital San Juan de Dios": [37.3805, -5.9720],
+  "Eduardo Dato": [37.3820, -5.9750],
+  "Jiménez Aranda": [37.3835, -5.9770],
+  "Puerta de Carmona": [37.3880, -5.9830],
+  "Santiago": [37.3885, -5.9850],
+  "Benito Más y Prat": [37.3815, -5.9740],
+  "Rico Cejudo": [37.3810, -5.9730],
+  "Goya": [37.3805, -5.9725],
+  "Alejandro Collantes": [37.3800, -5.9720],
+  "Cardenal Lluch": [37.3795, -5.9715],
+  "Alberto Lista": [37.3930, -5.9955],
+  "García Tassara": [37.3930, -5.9960],
+  "Gerona": [37.3905, -5.9895],
+  "Castellar": [37.3910, -5.9900],
+  "Alemanes": [37.3862, -5.9935],
+  "Santo Tomás": [37.3840, -5.9955],
+  "Temprado": [37.3845, -5.9980],
+  "Rodo": [37.3850, -5.9995],
+  "Villegas": [37.3880, -5.9935],
+
+  // --- JUEVES SANTO ---
+  "Jovellanos": [37.3900, -5.9960],
+  "Jovellanos - Tetuán": [37.3900, -5.9960],
+  "Almirante Apodaca": [37.3918, -5.9955],
+  "Alcázares": [37.3940, -5.9940],
+  "Las Cortes": [37.3915, -5.9945],
+  "Alhóndiga": [37.3925, -5.9890],
+  "Cardenal Carlos Amigo": [37.3860, -5.9940],
+  "Jardines de Murillo": [37.3820, -5.9870],
+
+  // --- MADRUGÁ ---
+  "Resolana": [37.3975, -5.9920],
+  "Parras": [37.3965, -5.9925],
+  "Muro": [37.3970, -5.9920],
+  "Arco de la Macarena": [37.3985, -5.9915],
+  "Santas Patronas": [37.3855, -5.9980],
+  "Pureza": [37.3820, -6.0065],
+  "Rodrigo de Triana": [37.3815, -6.0060],
+  "Párroco D. Eugenio": [37.3810, -6.0070],
+  "Pl. San Román": [37.3940, -5.9890],
+  "Escuelas Pías": [37.3930, -5.9885],
+  "Callao": [37.3830, -6.0055],
+  "Castilla": [37.3820, -6.0060],
+  "San Jorge": [37.3835, -6.0050],
+
+  // --- VIERNES SANTO ---
+  "Hernando Colón": [37.3855, -5.9945],
+
+  // --- SABADO SANTO ---
+  "Virgen del Sol": [37.3700, -5.9810],
+  "Avión Cuatro Vientos": [37.3705, -5.9800],
+  "Pl. Santa Isabel": [37.3945, -5.9900],
+  "Dueñas": [37.3940, -5.9935],
+  "Boteros": [37.3892, -5.9895],
+  "Francisco Carrión Mejías": [37.3900, -5.9880],
+  "Jáuregui": [37.3910, -5.9870],
+  "Madre Isabel de la Trinidad": [37.3930, -5.9865],
+  "María Auxiliadora": [37.3920, -5.9850],
+  "Padre Jerónimo de Córdoba": [37.3918, -5.9855],
+  "Glorieta D. Juan de Austria": [37.3800, -5.9900],
+
+  // --- DOMINGO DE RESURRECCION ---
+  "San Luis": [37.3960, -5.9910],
+  "Conde de Barajas": [37.3940, -5.9965],
+  "Bustos Tavera": [37.3950, -5.9905],
+
+  // Extra
+  "Carlos Cañal": [37.3870, -6.0000],
+  "Pl. San Lorenzo": [37.3935, -5.9965],
+};
+
+// Colores por día
+const DAY_COLORS = {
+  "Domingo de Ramos": "#8B0000",
+  "Lunes Santo": "#4B0082",
+  "Martes Santo": "#006400",
+  "Miércoles Santo": "#B8860B",
+  "Jueves Santo": "#800020",
+  "La Madrugá": "#1a1a2e",
+  "Viernes Santo": "#2F4F4F",
+  "Sábado Santo": "#4A235A",
+  "Domingo de Resurrección": "#DAA520"
+};
+
+// Colores por hermandad (distintos dentro de cada día)
+const BROTHERHOOD_COLORS = [
+  "#C41E3A", "#2E86AB", "#A23B72", "#F18F01", "#C73E1D",
+  "#3B1F2B", "#44803F", "#5C4D7D", "#E8871E", "#1B998B",
+  "#D64933", "#3D348B", "#7678ED", "#F7B801", "#273043"
+];
+
+const PROCESSIONS = {
+  "Domingo de Ramos": {
+    date: "29 de marzo",
+    description: "El Domingo de Ramos abre oficialmente la Semana Santa de Sevilla conmemorando la entrada triunfal de Jesús en Jerusalén.",
+    hermandades: [
+      {
+        name: "La Borriquita",
+        fullName: "Hermandad de la Borriquita",
+        waypoints: [
+          { name: "Salida", time: "14:15", coords: [37.3882, -5.9925] },
+          { name: "Cuna", time: "14:30", coords: [37.3902, -5.9940] },
+          { name: "Amor de Dios", time: "15:00", coords: [37.3920, -5.9950] },
+          { name: "Campana", time: "15:35", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "16:15", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "16:41", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "17:00", coords: [37.3853, -5.9918] },
+          { name: "Álvarez Quintero", time: "17:30", coords: [37.3870, -5.9930] },
+          { name: "Entrada", time: "18:30", coords: [37.3882, -5.9925] }
+        ]
+      },
+      {
+        name: "La Cena",
+        fullName: "Hermandad de la Sagrada Cena",
+        waypoints: [
+          { name: "Salida", time: "13:45", coords: [37.3935, -5.9900] },
+          { name: "Pl. los Terceros", time: "14:00", coords: [37.3935, -5.9900] },
+          { name: "Imagen", time: "14:30", coords: [37.3930, -5.9920] },
+          { name: "Encarnación", time: "15:00", coords: [37.3920, -5.9940] },
+          { name: "Javier Lasso de la Vega", time: "15:30", coords: [37.3910, -5.9955] },
+          { name: "Campana", time: "15:55", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "16:35", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "17:01", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "17:20", coords: [37.3853, -5.9918] },
+          { name: "Argote de Molina", time: "18:00", coords: [37.3867, -5.9920] },
+          { name: "Cuesta del Rosario", time: "18:30", coords: [37.3895, -5.9910] },
+          { name: "Alfalfa", time: "19:00", coords: [37.3895, -5.9895] },
+          { name: "Pl. Cristo de Burgos", time: "19:30", coords: [37.3920, -5.9895] },
+          { name: "Doña María Coronel", time: "20:00", coords: [37.3935, -5.9895] },
+          { name: "Sol", time: "20:30", coords: [37.3955, -5.9890] },
+          { name: "Entrada", time: "21:45", coords: [37.3935, -5.9900] }
+        ]
+      },
+      {
+        name: "Jesús Despojado",
+        fullName: "Hermandad de Jesús Despojado",
+        waypoints: [
+          { name: "Salida", time: "14:20", coords: [37.3855, -5.9970] },
+          { name: "Zaragoza", time: "14:30", coords: [37.3870, -6.0005] },
+          { name: "San Pablo", time: "15:00", coords: [37.3888, -6.0005] },
+          { name: "Pl. Magdalena", time: "15:30", coords: [37.3888, -5.9990] },
+          { name: "Velázquez", time: "16:00", coords: [37.3898, -5.9978] },
+          { name: "Campana", time: "16:31", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "17:11", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "17:37", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "17:56", coords: [37.3853, -5.9918] },
+          { name: "Adolfo Rodríguez Jurado", time: "18:30", coords: [37.3855, -5.9970] },
+          { name: "Dos de Mayo", time: "19:00", coords: [37.3850, -5.9980] },
+          { name: "Real de la Carretería", time: "19:30", coords: [37.3845, -5.9985] },
+          { name: "Gamazo", time: "20:00", coords: [37.3860, -6.0010] },
+          { name: "Zaragoza", time: "20:30", coords: [37.3870, -6.0005] },
+          { name: "Fray Bartolomé de las Casas", time: "21:00", coords: [37.3870, -6.0020] },
+          { name: "Entrada", time: "22:45", coords: [37.3855, -5.9970] }
+        ]
+      },
+      {
+        name: "La Hiniesta",
+        fullName: "Hermandad de la Hiniesta",
+        waypoints: [
+          { name: "Salida", time: "13:45", coords: [37.3955, -5.9890] },
+          { name: "Relator", time: "14:00", coords: [37.3970, -5.9910] },
+          { name: "Feria", time: "14:30", coords: [37.3960, -5.9920] },
+          { name: "Correduría", time: "15:00", coords: [37.3950, -5.9930] },
+          { name: "Alameda de Hércules", time: "15:30", coords: [37.3950, -5.9960] },
+          { name: "Trajano", time: "16:00", coords: [37.3930, -5.9970] },
+          { name: "Pl. Duque", time: "16:30", coords: [37.3918, -5.9970] },
+          { name: "Campana", time: "17:01", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "17:41", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "18:07", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "18:26", coords: [37.3853, -5.9918] },
+          { name: "Francos", time: "19:00", coords: [37.3878, -5.9930] },
+          { name: "Cuesta del Rosario", time: "19:30", coords: [37.3895, -5.9910] },
+          { name: "Pl. Cristo de Burgos", time: "20:00", coords: [37.3920, -5.9895] },
+          { name: "Doña María Coronel", time: "20:30", coords: [37.3935, -5.9895] },
+          { name: "San Marcos", time: "21:00", coords: [37.3945, -5.9895] },
+          { name: "Entrada", time: "23:45", coords: [37.3955, -5.9890] }
+        ]
+      },
+      {
+        name: "La Paz",
+        fullName: "Hermandad de la Paz",
+        waypoints: [
+          { name: "Salida", time: "13:00", coords: [37.3760, -5.9830] },
+          { name: "Avda. Borbolla", time: "13:30", coords: [37.3760, -5.9830] },
+          { name: "Pl. España", time: "14:00", coords: [37.3770, -5.9870] },
+          { name: "Palos de la Frontera", time: "14:30", coords: [37.3795, -5.9920] },
+          { name: "Avda. Constitución", time: "15:00", coords: [37.3835, -5.9950] },
+          { name: "Postigo del Aceite", time: "15:30", coords: [37.3840, -5.9970] },
+          { name: "Harinas", time: "16:00", coords: [37.3850, -5.9990] },
+          { name: "Barcelona", time: "16:30", coords: [37.3870, -5.9985] },
+          { name: "Plaza Nueva", time: "17:00", coords: [37.3878, -5.9980] },
+          { name: "Campana", time: "17:47", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "18:27", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "18:53", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "19:12", coords: [37.3853, -5.9918] },
+          { name: "Miguel Mañara", time: "19:30", coords: [37.3840, -5.9900] },
+          { name: "Avda. Roma", time: "20:00", coords: [37.3810, -5.9910] },
+          { name: "Palos de la Frontera", time: "20:30", coords: [37.3795, -5.9920] },
+          { name: "Pl. España", time: "21:00", coords: [37.3770, -5.9870] },
+          { name: "Glorieta Covadonga", time: "21:30", coords: [37.3750, -5.9850] },
+          { name: "Brasil", time: "22:00", coords: [37.3735, -5.9840] },
+          { name: "Entrada", time: "00:30", coords: [37.3760, -5.9830] }
+        ]
+      },
+      {
+        name: "San Roque",
+        fullName: "Hermandad de San Roque",
+        waypoints: [
+          { name: "Salida", time: "15:30", coords: [37.3925, -5.9880] },
+          { name: "Puñonrrostro", time: "16:00", coords: [37.3940, -5.9890] },
+          { name: "Ponce de León", time: "16:30", coords: [37.3940, -5.9900] },
+          { name: "Encarnación", time: "17:00", coords: [37.3920, -5.9940] },
+          { name: "Orfila", time: "17:30", coords: [37.3915, -5.9950] },
+          { name: "Campana", time: "18:49", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "19:29", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "19:55", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "20:14", coords: [37.3853, -5.9918] },
+          { name: "Argote de Molina", time: "20:00", coords: [37.3867, -5.9920] },
+          { name: "Cuesta del Rosario", time: "20:30", coords: [37.3895, -5.9910] },
+          { name: "Odreros", time: "21:00", coords: [37.3893, -5.9905] },
+          { name: "Caballerizas", time: "21:30", coords: [37.3900, -5.9890] },
+          { name: "Medinaceli", time: "22:00", coords: [37.3910, -5.9880] },
+          { name: "Guadalupe", time: "22:30", coords: [37.3920, -5.9870] },
+          { name: "Entrada", time: "00:45", coords: [37.3925, -5.9880] }
+        ]
+      },
+      {
+        name: "La Estrella",
+        fullName: "Hermandad de la Estrella",
+        waypoints: [
+          { name: "Salida", time: "16:30", coords: [37.3815, -6.0060] },
+          { name: "San Jacinto", time: "17:00", coords: [37.3830, -6.0060] },
+          { name: "Reyes Católicos", time: "17:30", coords: [37.3860, -6.0020] },
+          { name: "San Pablo", time: "18:00", coords: [37.3888, -6.0005] },
+          { name: "Rioja", time: "18:30", coords: [37.3900, -5.9990] },
+          { name: "Campana", time: "19:24", coords: [37.3907, -5.9965] },
+          { name: "Sierpes", time: "19:30", coords: [37.3890, -5.9960] },
+          { name: "Plaza", time: "20:04", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "20:30", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "20:49", coords: [37.3853, -5.9918] },
+          { name: "Fray Ceferino González", time: "21:30", coords: [37.3843, -5.9965] },
+          { name: "Postigo del Aceite", time: "22:00", coords: [37.3840, -5.9970] },
+          { name: "Arfe", time: "22:30", coords: [37.3845, -5.9975] },
+          { name: "Adriano", time: "23:00", coords: [37.3852, -6.0000] },
+          { name: "Pastor y Landero", time: "23:30", coords: [37.3855, -6.0015] },
+          { name: "Reyes Católicos", time: "00:00", coords: [37.3860, -6.0020] },
+          { name: "Puente de Triana", time: "00:30", coords: [37.3840, -6.0040] },
+          { name: "San Jacinto", time: "01:00", coords: [37.3830, -6.0060] },
+          { name: "Entrada", time: "02:30", coords: [37.3815, -6.0060] }
+        ]
+      },
+      {
+        name: "La Amargura",
+        fullName: "Hermandad de la Amargura",
+        waypoints: [
+          { name: "Salida", time: "19:00", coords: [37.3940, -5.9935] },
+          { name: "Amor de Dios", time: "19:30", coords: [37.3920, -5.9950] },
+          { name: "Trajano", time: "20:00", coords: [37.3930, -5.9970] },
+          { name: "Campana", time: "20:34", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "21:14", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "21:40", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "21:59", coords: [37.3853, -5.9918] },
+          { name: "Francos", time: "22:30", coords: [37.3878, -5.9930] },
+          { name: "Cuna", time: "23:00", coords: [37.3902, -5.9940] },
+          { name: "Pl. Encarnación", time: "23:30", coords: [37.3920, -5.9940] },
+          { name: "Santa Ángela de la Cruz", time: "00:00", coords: [37.3935, -5.9920] },
+          { name: "San Juan de la Palma", time: "00:30", coords: [37.3940, -5.9935] },
+          { name: "Entrada", time: "01:50", coords: [37.3940, -5.9935] }
+        ]
+      },
+      {
+        name: "El Amor",
+        fullName: "Hermandad del Amor",
+        waypoints: [
+          { name: "Salida", time: "20:15", coords: [37.3902, -5.9940] },
+          { name: "Cuna", time: "20:30", coords: [37.3902, -5.9940] },
+          { name: "Campana", time: "21:16", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "21:56", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "22:22", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "22:41", coords: [37.3853, -5.9918] },
+          { name: "Argote de Molina", time: "23:00", coords: [37.3867, -5.9920] },
+          { name: "Pl. Salvador", time: "23:30", coords: [37.3882, -5.9925] },
+          { name: "Entrada", time: "01:30", coords: [37.3902, -5.9940] }
+        ]
+      }
+    ]
+  },
+
+  "Lunes Santo": {
+    date: "30 de marzo",
+    description: "El Lunes Santo prolonga la emoción del día anterior con hermandades que cruzan la ciudad de extremo a extremo.",
+    hermandades: [
+      {
+        name: "San Pablo",
+        fullName: "Hermandad de San Pablo",
+        waypoints: [
+          { name: "Salida", time: "11:00", coords: [37.3780, -5.9710] },
+          { name: "Avda. Pedro Romero", time: "11:30", coords: [37.3780, -5.9710] },
+          { name: "Doctor Laffón Soto", time: "12:00", coords: [37.3790, -5.9730] },
+          { name: "Avda. Soleá", time: "12:30", coords: [37.3820, -5.9750] },
+          { name: "Sinaí", time: "13:00", coords: [37.3840, -5.9770] },
+          { name: "Luis Montoto", time: "13:30", coords: [37.3870, -5.9810] },
+          { name: "San Esteban", time: "14:30", coords: [37.3885, -5.9860] },
+          { name: "Cuesta del Rosario", time: "15:00", coords: [37.3895, -5.9910] },
+          { name: "Granada", time: "15:30", coords: [37.3890, -5.9925] },
+          { name: "Tetuán", time: "16:00", coords: [37.3900, -5.9970] },
+          { name: "Campana", time: "16:25", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "17:05", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "17:31", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "17:50", coords: [37.3853, -5.9918] },
+          { name: "Cuesta del Rosario", time: "18:30", coords: [37.3895, -5.9910] },
+          { name: "Pl. Cristo de Burgos", time: "19:30", coords: [37.3920, -5.9895] },
+          { name: "Valle", time: "20:00", coords: [37.3925, -5.9860] },
+          { name: "Entrada", time: "01:15", coords: [37.3780, -5.9710] }
+        ]
+      },
+      {
+        name: "La Redención",
+        fullName: "Hermandad de la Redención",
+        waypoints: [
+          { name: "Salida", time: "14:40", coords: [37.3920, -5.9910] },
+          { name: "Juan de Mesa", time: "15:00", coords: [37.3920, -5.9910] },
+          { name: "Encarnación", time: "15:30", coords: [37.3920, -5.9940] },
+          { name: "Aponte", time: "16:00", coords: [37.3925, -5.9940] },
+          { name: "Jesús del Gran Poder", time: "16:30", coords: [37.3935, -5.9960] },
+          { name: "Campana", time: "16:59", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "17:39", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "18:05", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "18:24", coords: [37.3853, -5.9918] },
+          { name: "Álvarez Quintero", time: "19:00", coords: [37.3870, -5.9930] },
+          { name: "Cuesta del Rosario", time: "19:30", coords: [37.3895, -5.9910] },
+          { name: "Dormitorio", time: "20:30", coords: [37.3905, -5.9880] },
+          { name: "Pl. San Leandro", time: "21:00", coords: [37.3900, -5.9870] },
+          { name: "Entrada", time: "23:15", coords: [37.3920, -5.9910] }
+        ]
+      },
+      {
+        name: "Santa Genoveva",
+        fullName: "Hermandad de Santa Genoveva",
+        waypoints: [
+          { name: "Salida", time: "12:25", coords: [37.3745, -5.9810] },
+          { name: "Felipe II", time: "13:00", coords: [37.3745, -5.9810] },
+          { name: "Porvenir", time: "13:30", coords: [37.3760, -5.9830] },
+          { name: "Glorieta del Cid", time: "15:00", coords: [37.3790, -5.9920] },
+          { name: "Avda. Roma", time: "15:30", coords: [37.3810, -5.9910] },
+          { name: "Avda. Constitución", time: "16:00", coords: [37.3835, -5.9950] },
+          { name: "Puerta del Arenal", time: "16:30", coords: [37.3858, -5.9995] },
+          { name: "Gamazo", time: "17:00", coords: [37.3860, -6.0010] },
+          { name: "Tetuán", time: "17:30", coords: [37.3900, -5.9970] },
+          { name: "Campana", time: "17:46", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "18:26", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "18:52", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "19:11", coords: [37.3853, -5.9918] },
+          { name: "Pl. Triunfo", time: "19:30", coords: [37.3842, -5.9895] },
+          { name: "San Fernando", time: "20:00", coords: [37.3818, -5.9890] },
+          { name: "Glorieta del Cid", time: "21:00", coords: [37.3790, -5.9920] },
+          { name: "Entrada", time: "02:00", coords: [37.3745, -5.9810] }
+        ]
+      },
+      {
+        name: "Santa Marta",
+        fullName: "Hermandad de Santa Marta",
+        waypoints: [
+          { name: "Salida", time: "18:10", coords: [37.3907, -5.9965] },
+          { name: "Campana", time: "18:47", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "19:27", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "19:53", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "20:12", coords: [37.3853, -5.9918] },
+          { name: "Placentines", time: "20:30", coords: [37.3862, -5.9925] },
+          { name: "Cuna", time: "21:00", coords: [37.3902, -5.9940] },
+          { name: "Entrada", time: "22:20", coords: [37.3895, -5.9945] }
+        ]
+      },
+      {
+        name: "San Gonzalo",
+        fullName: "Hermandad de San Gonzalo",
+        waypoints: [
+          { name: "Salida", time: "15:00", coords: [37.3810, -6.0070] },
+          { name: "San Jacinto", time: "15:30", coords: [37.3830, -6.0060] },
+          { name: "Altozano", time: "16:30", coords: [37.3830, -6.0050] },
+          { name: "Paseo Cristóbal Colón", time: "17:00", coords: [37.3835, -6.0020] },
+          { name: "Reyes Católicos", time: "17:30", coords: [37.3860, -6.0020] },
+          { name: "San Pablo", time: "18:00", coords: [37.3888, -6.0005] },
+          { name: "Rioja", time: "18:30", coords: [37.3900, -5.9990] },
+          { name: "Campana", time: "19:19", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "19:59", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "20:25", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "20:44", coords: [37.3853, -5.9918] },
+          { name: "Arfe", time: "21:00", coords: [37.3845, -5.9975] },
+          { name: "Adriano", time: "21:30", coords: [37.3852, -6.0000] },
+          { name: "Pastor y Landero", time: "22:00", coords: [37.3855, -6.0015] },
+          { name: "Reyes Católicos", time: "22:30", coords: [37.3860, -6.0020] },
+          { name: "Puente de Triana", time: "23:00", coords: [37.3840, -6.0040] },
+          { name: "San Jacinto", time: "23:30", coords: [37.3830, -6.0060] },
+          { name: "Entrada", time: "02:30", coords: [37.3810, -6.0070] }
+        ]
+      },
+      {
+        name: "Vera Cruz",
+        fullName: "Hermandad de la Vera Cruz",
+        waypoints: [
+          { name: "Salida", time: "19:35", coords: [37.3905, -5.9960] },
+          { name: "Teniente Borges", time: "20:00", coords: [37.3905, -5.9960] },
+          { name: "Campana", time: "20:35", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "21:15", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "21:41", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "22:00", coords: [37.3853, -5.9918] },
+          { name: "Francos", time: "22:30", coords: [37.3878, -5.9930] },
+          { name: "Cuna", time: "23:00", coords: [37.3902, -5.9940] },
+          { name: "Entrada", time: "01:00", coords: [37.3905, -5.9960] }
+        ]
+      },
+      {
+        name: "Las Penas de San Vicente",
+        fullName: "Hermandad de las Penas de San Vicente",
+        waypoints: [
+          { name: "Salida", time: "20:00", coords: [37.3920, -5.9995] },
+          { name: "Alfonso XII", time: "20:30", coords: [37.3910, -5.9975] },
+          { name: "Campana", time: "21:06", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "21:46", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "22:12", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "22:31", coords: [37.3853, -5.9918] },
+          { name: "Francos", time: "23:00", coords: [37.3878, -5.9930] },
+          { name: "Villegas", time: "23:30", coords: [37.3880, -5.9935] },
+          { name: "Tetuán", time: "00:00", coords: [37.3900, -5.9970] },
+          { name: "Campana", time: "00:30", coords: [37.3907, -5.9965] },
+          { name: "Entrada", time: "01:55", coords: [37.3920, -5.9995] }
+        ]
+      },
+      {
+        name: "Las Aguas",
+        fullName: "Hermandad de las Aguas",
+        waypoints: [
+          { name: "Salida", time: "18:15", coords: [37.3845, -5.9975] },
+          { name: "Arfe", time: "18:30", coords: [37.3845, -5.9975] },
+          { name: "Castelar", time: "19:00", coords: [37.3858, -5.9985] },
+          { name: "Zaragoza", time: "19:30", coords: [37.3870, -6.0005] },
+          { name: "San Pablo", time: "20:00", coords: [37.3888, -6.0005] },
+          { name: "Rioja", time: "21:00", coords: [37.3900, -5.9990] },
+          { name: "Campana", time: "21:38", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "22:18", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "22:24", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "23:03", coords: [37.3853, -5.9918] },
+          { name: "Tomás de Ibarra", time: "23:30", coords: [37.3843, -5.9955] },
+          { name: "Entrada", time: "01:20", coords: [37.3845, -5.9975] }
+        ]
+      },
+      {
+        name: "El Museo",
+        fullName: "Hermandad del Museo",
+        waypoints: [
+          { name: "Salida", time: "20:40", coords: [37.3910, -6.0000] },
+          { name: "Pl. Museo", time: "21:00", coords: [37.3910, -6.0000] },
+          { name: "Alfonso XII", time: "21:30", coords: [37.3910, -5.9975] },
+          { name: "Campana", time: "22:09", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "22:49", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "23:15", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "23:34", coords: [37.3853, -5.9918] },
+          { name: "Puerta del Arenal", time: "00:00", coords: [37.3858, -5.9995] },
+          { name: "Doña Guiomar", time: "00:30", coords: [37.3865, -6.0005] },
+          { name: "Gravina", time: "01:00", coords: [37.3870, -6.0010] },
+          { name: "Entrada", time: "03:15", coords: [37.3910, -6.0000] }
+        ]
+      }
+    ]
+  },
+
+  "Martes Santo": {
+    date: "31 de marzo",
+    description: "El Martes Santo concentra algunas de las procesiones más impresionantes visualmente de toda la semana.",
+    hermandades: [
+      {
+        name: "El Cerro",
+        fullName: "Hermandad del Cerro del Águila",
+        waypoints: [
+          { name: "Salida", time: "11:40", coords: [37.3700, -5.9770] },
+          { name: "Afán de Ribera", time: "12:00", coords: [37.3700, -5.9770] },
+          { name: "Avda. Ramón y Cajal", time: "13:00", coords: [37.3740, -5.9820] },
+          { name: "Avda. Carlos V", time: "14:30", coords: [37.3790, -5.9870] },
+          { name: "Puerta de Jerez", time: "15:00", coords: [37.3830, -5.9945] },
+          { name: "Arfe", time: "15:30", coords: [37.3845, -5.9975] },
+          { name: "Plaza Nueva", time: "16:00", coords: [37.3878, -5.9980] },
+          { name: "Campana", time: "16:40", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "17:17", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "17:42", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "18:00", coords: [37.3853, -5.9918] },
+          { name: "Francos", time: "18:30", coords: [37.3878, -5.9930] },
+          { name: "Puerta de la Carne", time: "20:00", coords: [37.3870, -5.9845] },
+          { name: "Entrada", time: "02:30", coords: [37.3700, -5.9770] }
+        ]
+      },
+      {
+        name: "San Esteban",
+        fullName: "Hermandad de San Esteban",
+        waypoints: [
+          { name: "Salida", time: "14:40", coords: [37.3885, -5.9860] },
+          { name: "Pl. San Ildefonso", time: "15:00", coords: [37.3900, -5.9865] },
+          { name: "Dormitorio", time: "15:30", coords: [37.3905, -5.9880] },
+          { name: "Imagen", time: "16:00", coords: [37.3930, -5.9920] },
+          { name: "Laraña", time: "16:30", coords: [37.3910, -5.9950] },
+          { name: "Campana", time: "17:45", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "18:22", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "18:47", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "19:05", coords: [37.3853, -5.9918] },
+          { name: "Francos", time: "19:30", coords: [37.3878, -5.9930] },
+          { name: "Cuesta del Rosario", time: "20:00", coords: [37.3895, -5.9910] },
+          { name: "Alfalfa", time: "20:30", coords: [37.3895, -5.9895] },
+          { name: "Águilas", time: "21:00", coords: [37.3890, -5.9880] },
+          { name: "Entrada", time: "23:30", coords: [37.3885, -5.9860] }
+        ]
+      },
+      {
+        name: "La Candelaria",
+        fullName: "Hermandad de la Candelaria",
+        waypoints: [
+          { name: "Salida", time: "15:30", coords: [37.3830, -5.9870] },
+          { name: "Candilejo", time: "16:00", coords: [37.3890, -5.9910] },
+          { name: "Pl. Salvador", time: "17:00", coords: [37.3882, -5.9925] },
+          { name: "Cuna", time: "17:30", coords: [37.3902, -5.9940] },
+          { name: "Campana", time: "18:32", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "19:09", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "19:34", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "19:52", coords: [37.3853, -5.9918] },
+          { name: "Puerta de Jerez", time: "20:30", coords: [37.3830, -5.9945] },
+          { name: "San Fernando", time: "21:00", coords: [37.3818, -5.9890] },
+          { name: "Cano y Cueto", time: "22:00", coords: [37.3820, -5.9865] },
+          { name: "Santa María la Blanca", time: "22:30", coords: [37.3840, -5.9870] },
+          { name: "Entrada", time: "01:00", coords: [37.3830, -5.9870] }
+        ]
+      },
+      {
+        name: "San Benito",
+        fullName: "Hermandad de San Benito",
+        waypoints: [
+          { name: "Salida", time: "16:00", coords: [37.3885, -5.9850] },
+          { name: "Muro de los Navarros", time: "16:30", coords: [37.3885, -5.9850] },
+          { name: "Laraña", time: "17:30", coords: [37.3910, -5.9950] },
+          { name: "Trajano", time: "18:30", coords: [37.3930, -5.9970] },
+          { name: "Campana", time: "19:25", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "20:02", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "20:27", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "20:45", coords: [37.3853, -5.9918] },
+          { name: "Alfalfa", time: "21:30", coords: [37.3895, -5.9895] },
+          { name: "San Esteban", time: "23:00", coords: [37.3885, -5.9860] },
+          { name: "Entrada", time: "02:05", coords: [37.3885, -5.9850] }
+        ]
+      },
+      {
+        name: "Los Javieres",
+        fullName: "Hermandad de los Javieres",
+        waypoints: [
+          { name: "Salida", time: "19:50", coords: [37.3925, -5.9955] },
+          { name: "Santa Bárbara", time: "20:00", coords: [37.3925, -5.9955] },
+          { name: "Campana", time: "20:44", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "21:21", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "21:46", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "22:04", coords: [37.3853, -5.9918] },
+          { name: "Almirantazgo", time: "22:30", coords: [37.3848, -5.9935] },
+          { name: "Castelar", time: "23:00", coords: [37.3858, -5.9985] },
+          { name: "Jesús del Gran Poder", time: "00:30", coords: [37.3935, -5.9960] },
+          { name: "Entrada", time: "01:30", coords: [37.3925, -5.9955] }
+        ]
+      },
+      {
+        name: "Dulce Nombre",
+        fullName: "Hermandad del Dulce Nombre",
+        waypoints: [
+          { name: "Salida", time: "19:22", coords: [37.3918, -5.9975] },
+          { name: "Cardenal Spínola", time: "19:30", coords: [37.3918, -5.9975] },
+          { name: "Pl. Gavidia", time: "20:00", coords: [37.3920, -5.9985] },
+          { name: "Jesús del Gran Poder", time: "20:30", coords: [37.3935, -5.9960] },
+          { name: "Campana", time: "21:09", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "21:46", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "22:11", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "22:29", coords: [37.3853, -5.9918] },
+          { name: "Argote de Molina", time: "23:00", coords: [37.3867, -5.9920] },
+          { name: "Cuna", time: "00:00", coords: [37.3902, -5.9940] },
+          { name: "Entrada", time: "03:00", coords: [37.3918, -5.9975] }
+        ]
+      },
+      {
+        name: "Los Estudiantes",
+        fullName: "Hermandad de los Estudiantes",
+        waypoints: [
+          { name: "Salida", time: "18:30", coords: [37.3855, -5.9970] },
+          { name: "Adolfo Rodríguez Jurado", time: "19:00", coords: [37.3855, -5.9970] },
+          { name: "Arfe", time: "19:30", coords: [37.3845, -5.9975] },
+          { name: "Castelar", time: "20:00", coords: [37.3858, -5.9985] },
+          { name: "Zaragoza", time: "20:30", coords: [37.3870, -6.0005] },
+          { name: "Méndez Núñez", time: "21:00", coords: [37.3900, -5.9980] },
+          { name: "Campana", time: "21:49", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "22:26", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "22:51", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "23:09", coords: [37.3853, -5.9918] },
+          { name: "Miguel de Mañara", time: "23:30", coords: [37.3840, -5.9900] },
+          { name: "Entrada", time: "01:45", coords: [37.3855, -5.9970] }
+        ]
+      },
+      {
+        name: "Santa Cruz",
+        fullName: "Hermandad de Santa Cruz",
+        waypoints: [
+          { name: "Salida", time: "20:05", coords: [37.3850, -5.9910] },
+          { name: "Almirantazgo", time: "20:30", coords: [37.3848, -5.9935] },
+          { name: "Puerta del Arenal", time: "21:00", coords: [37.3858, -5.9995] },
+          { name: "Barcelona", time: "21:30", coords: [37.3870, -5.9985] },
+          { name: "Velázquez", time: "22:00", coords: [37.3898, -5.9978] },
+          { name: "Campana", time: "22:55", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "23:32", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "23:57", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "00:15", coords: [37.3853, -5.9918] },
+          { name: "Entrada", time: "01:40", coords: [37.3850, -5.9910] }
+        ]
+      }
+    ]
+  },
+
+  "Miércoles Santo": {
+    date: "1 de abril",
+    description: "El Miércoles Santo marca el ecuador de la Semana Santa, con procesiones de gran tradición y fervor popular.",
+    hermandades: [
+      {
+        name: "El Carmen Doloroso",
+        fullName: "Hermandad del Carmen Doloroso",
+        waypoints: [
+          { name: "Salida", time: "14:45", coords: [37.3945, -5.9960] },
+          { name: "Leonor Dávalos", time: "15:30", coords: [37.3935, -5.9960] },
+          { name: "Trajano", time: "16:00", coords: [37.3930, -5.9970] },
+          { name: "Campana", time: "16:43", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "17:23", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "17:49", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "18:08", coords: [37.3853, -5.9918] },
+          { name: "Placentines", time: "18:30", coords: [37.3862, -5.9925] },
+          { name: "Álvarez Quintero", time: "19:00", coords: [37.3870, -5.9930] },
+          { name: "Encarnación", time: "20:00", coords: [37.3920, -5.9940] },
+          { name: "San Juan de la Palma", time: "21:30", coords: [37.3940, -5.9935] },
+          { name: "Feria", time: "22:00", coords: [37.3960, -5.9920] },
+          { name: "Entrada", time: "00:00", coords: [37.3945, -5.9960] }
+        ]
+      },
+      {
+        name: "El Buen Fin",
+        fullName: "Hermandad del Buen Fin",
+        waypoints: [
+          { name: "Salida", time: "15:00", coords: [37.3935, -5.9965] },
+          { name: "Pl. San Lorenzo", time: "15:30", coords: [37.3935, -5.9965] },
+          { name: "Jesús del Gran Poder", time: "16:00", coords: [37.3935, -5.9960] },
+          { name: "Pl. Concordia", time: "16:30", coords: [37.3930, -5.9975] },
+          { name: "Campana", time: "17:12", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "17:52", coords: [37.3858, -5.9935] },
+          { name: "San Miguel", time: "18:18", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "18:37", coords: [37.3853, -5.9918] },
+          { name: "Arco del Postigo", time: "19:00", coords: [37.3838, -5.9965] },
+          { name: "Castelar", time: "19:30", coords: [37.3858, -5.9985] },
+          { name: "Zaragoza", time: "20:00", coords: [37.3870, -6.0005] },
+          { name: "Gravina", time: "20:30", coords: [37.3870, -6.0010] },
+          { name: "Pl. Museo", time: "21:30", coords: [37.3910, -6.0000] },
+          { name: "Entrada", time: "23:30", coords: [37.3935, -5.9965] }
+        ]
+      },
+      {
+        name: "La Sed",
+        fullName: "Hermandad de la Sed",
+        waypoints: [
+          { name: "Salida", time: "12:00", coords: [37.3805, -5.9720] },
+          { name: "Eduardo Dato", time: "13:00", coords: [37.3820, -5.9750] },
+          { name: "Luis Montoto", time: "14:30", coords: [37.3870, -5.9810] },
+          { name: "Juan de Mesa", time: "16:00", coords: [37.3920, -5.9910] },
+          { name: "Encarnación", time: "16:30", coords: [37.3920, -5.9940] },
+          { name: "Laraña", time: "17:00", coords: [37.3910, -5.9950] },
+          { name: "Campana", time: "17:47", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "18:27", coords: [37.3858, -5.9935] },
+          { name: "San Miguel", time: "18:53", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "19:12", coords: [37.3853, -5.9918] },
+          { name: "Francos", time: "20:00", coords: [37.3878, -5.9930] },
+          { name: "Cuesta del Rosario", time: "20:30", coords: [37.3895, -5.9910] },
+          { name: "Águilas", time: "21:00", coords: [37.3890, -5.9880] },
+          { name: "San Esteban", time: "21:30", coords: [37.3885, -5.9860] },
+          { name: "Luis Montoto", time: "22:00", coords: [37.3870, -5.9810] },
+          { name: "Entrada", time: "02:30", coords: [37.3805, -5.9720] }
+        ]
+      },
+      {
+        name: "San Bernardo",
+        fullName: "Hermandad de San Bernardo",
+        waypoints: [
+          { name: "Salida", time: "14:15", coords: [37.3800, -5.9840] },
+          { name: "Santa María la Blanca", time: "15:00", coords: [37.3840, -5.9870] },
+          { name: "Muñoz y Pabón", time: "16:00", coords: [37.3860, -5.9870] },
+          { name: "Alfalfa", time: "16:30", coords: [37.3895, -5.9895] },
+          { name: "Pl. Salvador", time: "17:00", coords: [37.3882, -5.9925] },
+          { name: "Cuna", time: "17:30", coords: [37.3902, -5.9940] },
+          { name: "Campana", time: "18:36", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "19:16", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "19:42", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "20:01", coords: [37.3853, -5.9918] },
+          { name: "Mateos Gago", time: "20:30", coords: [37.3850, -5.9910] },
+          { name: "San José", time: "21:00", coords: [37.3835, -5.9875] },
+          { name: "Entrada", time: "00:25", coords: [37.3800, -5.9840] }
+        ]
+      },
+      {
+        name: "La Lanzada",
+        fullName: "Hermandad de la Lanzada",
+        waypoints: [
+          { name: "Salida", time: "17:50", coords: [37.3925, -5.9950] },
+          { name: "Alberto Lista", time: "18:00", coords: [37.3930, -5.9955] },
+          { name: "Trajano", time: "18:30", coords: [37.3930, -5.9970] },
+          { name: "Jesús del Gran Poder", time: "19:00", coords: [37.3935, -5.9960] },
+          { name: "Campana", time: "19:43", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "20:23", coords: [37.3858, -5.9935] },
+          { name: "San Miguel", time: "20:49", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "21:08", coords: [37.3853, -5.9918] },
+          { name: "Argote de Molina", time: "21:30", coords: [37.3867, -5.9920] },
+          { name: "Pl. Salvador", time: "22:30", coords: [37.3882, -5.9925] },
+          { name: "Pl. San Andrés", time: "23:30", coords: [37.3925, -5.9950] },
+          { name: "Entrada", time: "00:57", coords: [37.3925, -5.9950] }
+        ]
+      },
+      {
+        name: "El Baratillo",
+        fullName: "Hermandad del Baratillo",
+        waypoints: [
+          { name: "Salida", time: "17:10", coords: [37.3852, -6.0000] },
+          { name: "Adriano", time: "17:30", coords: [37.3852, -6.0000] },
+          { name: "Reyes Católicos", time: "18:00", coords: [37.3860, -6.0020] },
+          { name: "Pl. Magdalena", time: "18:30", coords: [37.3888, -5.9990] },
+          { name: "Méndez Núñez", time: "19:00", coords: [37.3900, -5.9980] },
+          { name: "Tetuán", time: "19:30", coords: [37.3900, -5.9970] },
+          { name: "Campana", time: "20:14", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "20:54", coords: [37.3858, -5.9935] },
+          { name: "San Miguel", time: "21:20", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "21:39", coords: [37.3853, -5.9918] },
+          { name: "Santo Tomás", time: "22:00", coords: [37.3840, -5.9955] },
+          { name: "Arco del Postigo", time: "22:30", coords: [37.3838, -5.9965] },
+          { name: "Entrada", time: "01:30", coords: [37.3852, -6.0000] }
+        ]
+      },
+      {
+        name: "Los Panaderos",
+        fullName: "Hermandad de los Panaderos",
+        waypoints: [
+          { name: "Salida", time: "19:45", coords: [37.3930, -5.9960] },
+          { name: "García Tassara", time: "20:00", coords: [37.3930, -5.9960] },
+          { name: "Jesús del Gran Poder", time: "20:30", coords: [37.3935, -5.9960] },
+          { name: "Campana", time: "21:23", coords: [37.3907, -5.9965] },
+          { name: "Sierpes", time: "21:30", coords: [37.3890, -5.9960] },
+          { name: "Plaza", time: "22:03", coords: [37.3858, -5.9935] },
+          { name: "San Miguel", time: "22:29", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "22:48", coords: [37.3853, -5.9918] },
+          { name: "Pl. Salvador", time: "23:30", coords: [37.3882, -5.9925] },
+          { name: "Cuna", time: "00:00", coords: [37.3902, -5.9940] },
+          { name: "Entrada", time: "02:10", coords: [37.3930, -5.9960] }
+        ]
+      },
+      {
+        name: "El Cristo de Burgos",
+        fullName: "Hermandad del Cristo de Burgos",
+        waypoints: [
+          { name: "Salida", time: "19:25", coords: [37.3905, -5.9895] },
+          { name: "Gerona", time: "20:00", coords: [37.3905, -5.9895] },
+          { name: "Castellar", time: "20:30", coords: [37.3910, -5.9900] },
+          { name: "Cervantes", time: "21:00", coords: [37.3908, -5.9960] },
+          { name: "Campana", time: "22:01", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "22:41", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "23:07", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "23:26", coords: [37.3853, -5.9918] },
+          { name: "Francos", time: "00:00", coords: [37.3878, -5.9930] },
+          { name: "Sales y Ferré", time: "01:00", coords: [37.3910, -5.9895] },
+          { name: "Entrada", time: "02:15", coords: [37.3905, -5.9895] }
+        ]
+      },
+      {
+        name: "Las Siete Palabras",
+        fullName: "Hermandad de las Siete Palabras",
+        waypoints: [
+          { name: "Salida", time: "20:50", coords: [37.3920, -5.9985] },
+          { name: "Pl. Gavidia", time: "21:30", coords: [37.3920, -5.9985] },
+          { name: "Jesús del Gran Poder", time: "22:00", coords: [37.3935, -5.9960] },
+          { name: "Campana", time: "22:26", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "23:06", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "23:32", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "23:51", coords: [37.3853, -5.9918] },
+          { name: "Plaza Nueva", time: "00:30", coords: [37.3878, -5.9980] },
+          { name: "Velázquez", time: "01:00", coords: [37.3898, -5.9978] },
+          { name: "Alfonso XII", time: "01:30", coords: [37.3910, -5.9975] },
+          { name: "Entrada", time: "02:40", coords: [37.3920, -5.9985] }
+        ]
+      }
+    ]
+  },
+
+  "Jueves Santo": {
+    date: "2 de abril",
+    description: "El Jueves Santo conmemora la Última Cena de Jesús con sus discípulos. La intensidad emocional se eleva notablemente.",
+    hermandades: [
+      {
+        name: "Los Negritos",
+        fullName: "Hermandad de los Negritos",
+        waypoints: [
+          { name: "Salida", time: "15:00", coords: [37.3885, -5.9860] },
+          { name: "San Esteban", time: "15:30", coords: [37.3885, -5.9860] },
+          { name: "Cuesta del Rosario", time: "16:30", coords: [37.3895, -5.9910] },
+          { name: "Campana", time: "17:40", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "18:20", coords: [37.3858, -5.9935] },
+          { name: "San Miguel", time: "18:46", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "19:05", coords: [37.3853, -5.9918] },
+          { name: "Argote de Molina", time: "19:30", coords: [37.3867, -5.9920] },
+          { name: "Cuesta del Rosario", time: "20:00", coords: [37.3895, -5.9910] },
+          { name: "San Esteban", time: "21:00", coords: [37.3885, -5.9860] },
+          { name: "Entrada", time: "23:20", coords: [37.3885, -5.9860] }
+        ]
+      },
+      {
+        name: "La Exaltación",
+        fullName: "Hermandad de la Exaltación",
+        waypoints: [
+          { name: "Salida", time: "15:20", coords: [37.3935, -5.9920] },
+          { name: "Santa Ángela de la Cruz", time: "16:00", coords: [37.3935, -5.9920] },
+          { name: "Pl. Encarnación", time: "16:30", coords: [37.3920, -5.9940] },
+          { name: "Campana", time: "18:18", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "18:58", coords: [37.3858, -5.9935] },
+          { name: "San Miguel", time: "19:24", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "19:43", coords: [37.3853, -5.9918] },
+          { name: "Pl. Salvador", time: "21:00", coords: [37.3882, -5.9925] },
+          { name: "Pl. Cristo de Burgos", time: "22:00", coords: [37.3920, -5.9895] },
+          { name: "Entrada", time: "23:40", coords: [37.3935, -5.9920] }
+        ]
+      },
+      {
+        name: "Las Cigarreras",
+        fullName: "Hermandad de las Cigarreras",
+        waypoints: [
+          { name: "Salida", time: "17:00", coords: [37.3910, -5.9955] },
+          { name: "Almirante Apodaca", time: "17:30", coords: [37.3918, -5.9955] },
+          { name: "Campana", time: "18:53", coords: [37.3907, -5.9965] },
+          { name: "Sierpes", time: "19:00", coords: [37.3890, -5.9960] },
+          { name: "Plaza", time: "19:33", coords: [37.3858, -5.9935] },
+          { name: "San Miguel", time: "19:59", coords: [37.3856, -5.9929] },
+          { name: "Puerta de Palos", time: "20:18", coords: [37.3853, -5.9918] },
+          { name: "Puerta de Jerez", time: "21:00", coords: [37.3830, -5.9945] },
+          { name: "Jardines de Murillo", time: "21:30", coords: [37.3820, -5.9870] },
+          { name: "Cano y Cueto", time: "22:00", coords: [37.3820, -5.9865] },
+          { name: "Doña María Coronel", time: "23:30", coords: [37.3935, -5.9895] },
+          { name: "Entrada", time: "00:45", coords: [37.3910, -5.9955] }
+        ]
+      },
+      {
+        name: "Montesión",
+        fullName: "Hermandad de Montesión",
+        waypoints: [
+          { name: "Salida", time: "17:30", coords: [37.3950, -5.9930] },
+          { name: "Correduría", time: "18:00", coords: [37.3950, -5.9930] },
+          { name: "Alameda de Hércules", time: "18:30", coords: [37.3950, -5.9960] },
+          { name: "Jesús del Gran Poder", time: "19:00", coords: [37.3935, -5.9960] },
+          { name: "Campana", time: "19:28", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "20:08", coords: [37.3858, -5.9935] },
+          { name: "San Miguel", time: "20:34", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "20:53", coords: [37.3853, -5.9918] },
+          { name: "Álvarez Quintero", time: "21:30", coords: [37.3870, -5.9930] },
+          { name: "Cuna", time: "22:00", coords: [37.3902, -5.9940] },
+          { name: "San Juan de la Palma", time: "23:30", coords: [37.3940, -5.9935] },
+          { name: "Entrada", time: "01:30", coords: [37.3950, -5.9930] }
+        ]
+      },
+      {
+        name: "La Quinta Angustia",
+        fullName: "Hermandad de la Quinta Angustia",
+        waypoints: [
+          { name: "Salida", time: "19:35", coords: [37.3858, -5.9985] },
+          { name: "Campana", time: "20:16", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "20:56", coords: [37.3858, -5.9935] },
+          { name: "San Miguel", time: "21:22", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "21:41", coords: [37.3853, -5.9918] },
+          { name: "Arco del Postigo", time: "22:00", coords: [37.3838, -5.9965] },
+          { name: "Castelar", time: "22:30", coords: [37.3858, -5.9985] },
+          { name: "Entrada", time: "00:06", coords: [37.3858, -5.9985] }
+        ]
+      },
+      {
+        name: "El Valle",
+        fullName: "Hermandad del Valle",
+        waypoints: [
+          { name: "Laraña", time: "19:30", coords: [37.3910, -5.9950] },
+          { name: "Campana", time: "20:54", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "21:34", coords: [37.3858, -5.9935] },
+          { name: "San Miguel", time: "22:00", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "22:19", coords: [37.3853, -5.9918] },
+          { name: "Alemanes", time: "22:30", coords: [37.3862, -5.9935] },
+          { name: "Álvarez Quintero", time: "23:00", coords: [37.3870, -5.9930] },
+          { name: "Cuna", time: "23:30", coords: [37.3902, -5.9940] },
+          { name: "Laraña", time: "00:00", coords: [37.3910, -5.9950] },
+          { name: "Entrada", time: "00:55", coords: [37.3910, -5.9950] }
+        ]
+      },
+      {
+        name: "Pasión",
+        fullName: "Hermandad de Pasión",
+        waypoints: [
+          { name: "Salida", time: "20:20", coords: [37.3902, -5.9940] },
+          { name: "Cuna", time: "20:30", coords: [37.3902, -5.9940] },
+          { name: "Amor de Dios", time: "21:00", coords: [37.3920, -5.9950] },
+          { name: "Campana", time: "21:36", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "22:16", coords: [37.3858, -5.9935] },
+          { name: "San Miguel", time: "22:42", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "23:01", coords: [37.3853, -5.9918] },
+          { name: "Placentines", time: "23:30", coords: [37.3862, -5.9925] },
+          { name: "Francos", time: "00:00", coords: [37.3878, -5.9930] },
+          { name: "Entrada", time: "01:30", coords: [37.3902, -5.9940] }
+        ]
+      }
+    ]
+  },
+
+  "La Madrugá": {
+    date: "3 de abril",
+    description: "La Madrugá es la noche más importante de la Semana Santa. Sevilla entera vive en la calle desde la medianoche.",
+    hermandades: [
+      {
+        name: "El Silencio",
+        fullName: "Hermandad del Silencio",
+        waypoints: [
+          { name: "Salida", time: "00:45", coords: [37.3907, -5.9965] },
+          { name: "Campana", time: "01:00", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "01:40", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "02:06", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "02:25", coords: [37.3853, -5.9918] },
+          { name: "Francos", time: "03:00", coords: [37.3878, -5.9930] },
+          { name: "Cuna", time: "03:30", coords: [37.3902, -5.9940] },
+          { name: "Orfila", time: "04:00", coords: [37.3915, -5.9950] },
+          { name: "Jesús del Gran Poder", time: "04:30", coords: [37.3935, -5.9960] },
+          { name: "Entrada", time: "06:05", coords: [37.3907, -5.9965] }
+        ]
+      },
+      {
+        name: "El Gran Poder",
+        fullName: "Hermandad del Gran Poder",
+        waypoints: [
+          { name: "Salida", time: "00:35", coords: [37.3935, -5.9960] },
+          { name: "Jesús del Gran Poder", time: "01:00", coords: [37.3935, -5.9960] },
+          { name: "Campana", time: "01:39", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "02:19", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "02:45", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "03:04", coords: [37.3853, -5.9918] },
+          { name: "Arfe", time: "03:30", coords: [37.3845, -5.9975] },
+          { name: "Santas Patronas", time: "04:00", coords: [37.3855, -5.9980] },
+          { name: "Gravina", time: "04:30", coords: [37.3870, -6.0010] },
+          { name: "Pl. Museo", time: "05:00", coords: [37.3910, -6.0000] },
+          { name: "Entrada", time: "07:45", coords: [37.3935, -5.9960] }
+        ]
+      },
+      {
+        name: "La Macarena",
+        fullName: "Hermandad de la Macarena",
+        waypoints: [
+          { name: "Salida", time: "00:00", coords: [37.3985, -5.9915] },
+          { name: "Resolana", time: "00:30", coords: [37.3975, -5.9920] },
+          { name: "Feria", time: "01:00", coords: [37.3960, -5.9920] },
+          { name: "Correduría", time: "01:30", coords: [37.3950, -5.9930] },
+          { name: "Trajano", time: "02:00", coords: [37.3930, -5.9970] },
+          { name: "Campana", time: "02:50", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "03:30", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "03:56", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "04:15", coords: [37.3853, -5.9918] },
+          { name: "Francos", time: "04:30", coords: [37.3878, -5.9930] },
+          { name: "Cuesta del Rosario", time: "05:00", coords: [37.3895, -5.9910] },
+          { name: "Imagen", time: "06:00", coords: [37.3930, -5.9920] },
+          { name: "Santa Ángela de la Cruz", time: "06:30", coords: [37.3935, -5.9920] },
+          { name: "Feria", time: "07:00", coords: [37.3960, -5.9920] },
+          { name: "Resolana", time: "09:00", coords: [37.3975, -5.9920] },
+          { name: "Arco de la Macarena", time: "09:30", coords: [37.3985, -5.9915] },
+          { name: "Entrada", time: "13:30", coords: [37.3985, -5.9915] }
+        ]
+      },
+      {
+        name: "El Calvario",
+        fullName: "Hermandad del Calvario",
+        waypoints: [
+          { name: "Salida", time: "04:05", coords: [37.3907, -5.9965] },
+          { name: "Campana", time: "04:38", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "05:18", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "05:44", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "06:03", coords: [37.3853, -5.9918] },
+          { name: "Postigo del Aceite", time: "06:30", coords: [37.3840, -5.9970] },
+          { name: "Castelar", time: "07:00", coords: [37.3858, -5.9985] },
+          { name: "Entrada", time: "08:10", coords: [37.3907, -5.9965] }
+        ]
+      },
+      {
+        name: "La Esperanza de Triana",
+        fullName: "Hermandad de la Esperanza de Triana",
+        waypoints: [
+          { name: "Salida", time: "01:19", coords: [37.3820, -6.0065] },
+          { name: "Pureza", time: "01:30", coords: [37.3820, -6.0065] },
+          { name: "Pl. Altozano", time: "02:00", coords: [37.3830, -6.0050] },
+          { name: "Puente de Triana", time: "02:30", coords: [37.3840, -6.0040] },
+          { name: "Reyes Católicos", time: "03:00", coords: [37.3860, -6.0020] },
+          { name: "Zaragoza", time: "03:30", coords: [37.3870, -6.0005] },
+          { name: "Plaza Nueva", time: "04:00", coords: [37.3878, -5.9980] },
+          { name: "Tetuán", time: "04:30", coords: [37.3900, -5.9970] },
+          { name: "Campana", time: "05:06", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "05:46", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "06:12", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "06:31", coords: [37.3853, -5.9918] },
+          { name: "Arfe", time: "07:00", coords: [37.3845, -5.9975] },
+          { name: "Adriano", time: "07:30", coords: [37.3852, -6.0000] },
+          { name: "Puente de Triana", time: "08:00", coords: [37.3840, -6.0040] },
+          { name: "Pl. Altozano", time: "08:30", coords: [37.3830, -6.0050] },
+          { name: "San Jacinto", time: "09:00", coords: [37.3830, -6.0060] },
+          { name: "Entrada", time: "13:45", coords: [37.3820, -6.0065] }
+        ]
+      },
+      {
+        name: "Los Gitanos",
+        fullName: "Hermandad de los Gitanos",
+        waypoints: [
+          { name: "Salida", time: "02:30", coords: [37.3940, -5.9890] },
+          { name: "Pl. San Román", time: "03:00", coords: [37.3940, -5.9890] },
+          { name: "Doña María Coronel", time: "03:30", coords: [37.3935, -5.9895] },
+          { name: "Santa Ángela de la Cruz", time: "04:00", coords: [37.3935, -5.9920] },
+          { name: "Encarnación", time: "04:30", coords: [37.3920, -5.9940] },
+          { name: "Laraña", time: "05:00", coords: [37.3910, -5.9950] },
+          { name: "Jesús del Gran Poder", time: "06:00", coords: [37.3935, -5.9960] },
+          { name: "Campana", time: "06:32", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "07:12", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "07:38", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "07:57", coords: [37.3853, -5.9918] },
+          { name: "Francos", time: "08:30", coords: [37.3878, -5.9930] },
+          { name: "Pl. Cristo de Burgos", time: "09:30", coords: [37.3920, -5.9895] },
+          { name: "Entrada", time: "13:45", coords: [37.3940, -5.9890] }
+        ]
+      }
+    ]
+  },
+
+  "Viernes Santo": {
+    date: "3 de abril",
+    description: "El Viernes Santo recuerda la crucifixión y muerte de Jesús. Las procesiones adquieren un carácter más grave y austero.",
+    hermandades: [
+      {
+        name: "La Carretería",
+        fullName: "Hermandad de la Carretería",
+        waypoints: [
+          { name: "Salida", time: "16:40", coords: [37.3850, -5.9980] },
+          { name: "Gamazo", time: "17:00", coords: [37.3860, -6.0010] },
+          { name: "Plaza Nueva", time: "17:30", coords: [37.3878, -5.9980] },
+          { name: "Campana", time: "18:20", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "19:00", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "19:26", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "19:45", coords: [37.3853, -5.9918] },
+          { name: "Santo Tomás", time: "20:00", coords: [37.3840, -5.9955] },
+          { name: "Temprado", time: "20:30", coords: [37.3845, -5.9980] },
+          { name: "Dos de Mayo", time: "21:00", coords: [37.3850, -5.9980] },
+          { name: "Entrada", time: "22:25", coords: [37.3850, -5.9980] }
+        ]
+      },
+      {
+        name: "La Soledad de San Buenaventura",
+        fullName: "Hermandad de la Soledad de San Buenaventura",
+        waypoints: [
+          { name: "Salida", time: "17:50", coords: [37.3870, -6.0005] },
+          { name: "Zaragoza", time: "18:00", coords: [37.3870, -6.0005] },
+          { name: "Campana", time: "18:50", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "19:30", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "19:56", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "20:15", coords: [37.3853, -5.9918] },
+          { name: "Pl. Triunfo", time: "20:30", coords: [37.3842, -5.9895] },
+          { name: "Arfe", time: "21:00", coords: [37.3845, -5.9975] },
+          { name: "Doña Guiomar", time: "21:30", coords: [37.3865, -6.0005] },
+          { name: "Entrada", time: "22:45", coords: [37.3870, -6.0005] }
+        ]
+      },
+      {
+        name: "El Cachorro",
+        fullName: "Hermandad del Cachorro",
+        waypoints: [
+          { name: "Salida", time: "15:35", coords: [37.3820, -6.0060] },
+          { name: "Castilla", time: "16:00", coords: [37.3820, -6.0060] },
+          { name: "Altozano", time: "17:00", coords: [37.3830, -6.0050] },
+          { name: "Puente de Triana", time: "17:30", coords: [37.3840, -6.0040] },
+          { name: "Reyes Católicos", time: "18:00", coords: [37.3860, -6.0020] },
+          { name: "San Pablo", time: "18:30", coords: [37.3888, -6.0005] },
+          { name: "Campana", time: "19:09", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "19:49", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "20:15", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "20:34", coords: [37.3853, -5.9918] },
+          { name: "Fray Ceferino González", time: "21:00", coords: [37.3843, -5.9965] },
+          { name: "Arfe", time: "21:30", coords: [37.3845, -5.9975] },
+          { name: "Pastor y Landero", time: "22:00", coords: [37.3855, -6.0015] },
+          { name: "Reyes Católicos", time: "22:30", coords: [37.3860, -6.0020] },
+          { name: "Pl. Altozano", time: "23:00", coords: [37.3830, -6.0050] },
+          { name: "Castilla", time: "23:30", coords: [37.3820, -6.0060] },
+          { name: "Entrada", time: "02:35", coords: [37.3820, -6.0060] }
+        ]
+      },
+      {
+        name: "La O",
+        fullName: "Hermandad de la O",
+        waypoints: [
+          { name: "Salida", time: "18:00", coords: [37.3835, -6.0050] },
+          { name: "San Jorge", time: "18:30", coords: [37.3835, -6.0050] },
+          { name: "Reyes Católicos", time: "19:00", coords: [37.3860, -6.0020] },
+          { name: "San Pablo", time: "19:30", coords: [37.3888, -6.0005] },
+          { name: "Rioja", time: "20:00", coords: [37.3900, -5.9990] },
+          { name: "Campana", time: "20:28", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "21:08", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "21:34", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "21:52", coords: [37.3853, -5.9918] },
+          { name: "Santo Tomás", time: "22:30", coords: [37.3840, -5.9955] },
+          { name: "Adriano", time: "00:00", coords: [37.3852, -6.0000] },
+          { name: "Puente Isabel II", time: "01:00", coords: [37.3840, -6.0040] },
+          { name: "Entrada", time: "03:00", coords: [37.3835, -6.0050] }
+        ]
+      },
+      {
+        name: "San Isidoro",
+        fullName: "Hermandad de San Isidoro",
+        waypoints: [
+          { name: "Salida", time: "19:45", coords: [37.3895, -5.9910] },
+          { name: "Cuesta del Rosario", time: "20:00", coords: [37.3895, -5.9910] },
+          { name: "Orfila", time: "20:30", coords: [37.3915, -5.9950] },
+          { name: "Campana", time: "21:08", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "21:48", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "22:14", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "22:33", coords: [37.3853, -5.9918] },
+          { name: "Francos", time: "23:00", coords: [37.3878, -5.9930] },
+          { name: "Entrada", time: "00:15", coords: [37.3895, -5.9910] }
+        ]
+      },
+      {
+        name: "Montserrat",
+        fullName: "Hermandad de Montserrat",
+        waypoints: [
+          { name: "Salida", time: "20:30", coords: [37.3900, -5.9990] },
+          { name: "Rioja", time: "21:00", coords: [37.3900, -5.9990] },
+          { name: "Campana", time: "21:42", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "22:22", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "22:48", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "23:07", coords: [37.3853, -5.9918] },
+          { name: "Fray Ceferino González", time: "23:30", coords: [37.3843, -5.9965] },
+          { name: "Arfe", time: "00:00", coords: [37.3845, -5.9975] },
+          { name: "Puerta del Arenal", time: "00:30", coords: [37.3858, -5.9995] },
+          { name: "Zaragoza", time: "01:00", coords: [37.3870, -6.0005] },
+          { name: "Entrada", time: "02:30", coords: [37.3900, -5.9990] }
+        ]
+      },
+      {
+        name: "La Mortaja",
+        fullName: "Hermandad de la Mortaja",
+        waypoints: [
+          { name: "Salida", time: "20:00", coords: [37.3940, -5.9935] },
+          { name: "San Juan de la Palma", time: "20:30", coords: [37.3940, -5.9935] },
+          { name: "Alberto Lista", time: "21:00", coords: [37.3930, -5.9955] },
+          { name: "Pl. San Andrés", time: "21:30", coords: [37.3925, -5.9950] },
+          { name: "Campana", time: "22:16", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "22:56", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "23:22", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "23:41", coords: [37.3853, -5.9918] },
+          { name: "Argote de Molina", time: "00:00", coords: [37.3867, -5.9920] },
+          { name: "Cuesta del Rosario", time: "00:30", coords: [37.3895, -5.9910] },
+          { name: "Pl. Cristo de Burgos", time: "01:00", coords: [37.3920, -5.9895] },
+          { name: "Entrada", time: "02:00", coords: [37.3940, -5.9935] }
+        ]
+      }
+    ]
+  },
+
+  "Sábado Santo": {
+    date: "4 de abril",
+    description: "El Sábado Santo es un día de silencio y espera, con procesiones que reflejan el luto por la muerte de Cristo.",
+    hermandades: [
+      {
+        name: "El Sol",
+        fullName: "Hermandad del Sol",
+        waypoints: [
+          { name: "Salida", time: "12:45", coords: [37.3700, -5.9810] },
+          { name: "Enramadilla", time: "13:30", coords: [37.3770, -5.9850] },
+          { name: "Cano y Cueto", time: "14:30", coords: [37.3820, -5.9865] },
+          { name: "Muñoz y Pabón", time: "15:30", coords: [37.3860, -5.9870] },
+          { name: "Cuesta del Rosario", time: "16:00", coords: [37.3895, -5.9910] },
+          { name: "Campana", time: "17:15", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "17:55", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "18:21", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "18:40", coords: [37.3853, -5.9918] },
+          { name: "Pl. Triunfo", time: "19:00", coords: [37.3842, -5.9895] },
+          { name: "Puerta de Jerez", time: "19:30", coords: [37.3830, -5.9945] },
+          { name: "Enramadilla", time: "20:30", coords: [37.3770, -5.9850] },
+          { name: "Entrada", time: "22:45", coords: [37.3700, -5.9810] }
+        ]
+      },
+      {
+        name: "Los Servitas",
+        fullName: "Hermandad de los Servitas",
+        waypoints: [
+          { name: "Salida", time: "15:05", coords: [37.3945, -5.9900] },
+          { name: "Pl. San Marcos", time: "15:30", coords: [37.3945, -5.9895] },
+          { name: "Dueñas", time: "16:00", coords: [37.3940, -5.9935] },
+          { name: "Alcázares", time: "16:30", coords: [37.3940, -5.9940] },
+          { name: "Laraña", time: "17:00", coords: [37.3910, -5.9950] },
+          { name: "Campana", time: "17:36", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "18:16", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "18:42", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "19:01", coords: [37.3853, -5.9918] },
+          { name: "Francos", time: "19:30", coords: [37.3878, -5.9930] },
+          { name: "Cuesta del Rosario", time: "20:00", coords: [37.3895, -5.9910] },
+          { name: "Doña María Coronel", time: "21:00", coords: [37.3935, -5.9895] },
+          { name: "Entrada", time: "22:40", coords: [37.3945, -5.9900] }
+        ]
+      },
+      {
+        name: "La Trinidad",
+        fullName: "Hermandad de la Trinidad",
+        waypoints: [
+          { name: "Salida", time: "15:05", coords: [37.3920, -5.9850] },
+          { name: "María Auxiliadora", time: "15:30", coords: [37.3920, -5.9850] },
+          { name: "Valle", time: "16:00", coords: [37.3925, -5.9860] },
+          { name: "Almirante Apodaca", time: "17:00", coords: [37.3918, -5.9955] },
+          { name: "Laraña", time: "17:30", coords: [37.3910, -5.9950] },
+          { name: "Campana", time: "18:08", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "18:48", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "19:14", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "19:33", coords: [37.3853, -5.9918] },
+          { name: "Argote de Molina", time: "20:00", coords: [37.3867, -5.9920] },
+          { name: "Cuesta del Rosario", time: "20:30", coords: [37.3895, -5.9910] },
+          { name: "Boteros", time: "21:00", coords: [37.3892, -5.9895] },
+          { name: "Valle", time: "22:30", coords: [37.3925, -5.9860] },
+          { name: "Entrada", time: "01:30", coords: [37.3920, -5.9850] }
+        ]
+      },
+      {
+        name: "El Santo Entierro",
+        fullName: "Hermandad del Santo Entierro",
+        waypoints: [
+          { name: "Salida", time: "18:45", coords: [37.3907, -5.9965] },
+          { name: "Campana", time: "19:03", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "19:43", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "20:09", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "20:28", coords: [37.3853, -5.9918] },
+          { name: "Hernando Colón", time: "21:00", coords: [37.3855, -5.9945] },
+          { name: "Tetuán", time: "21:30", coords: [37.3900, -5.9970] },
+          { name: "Alfonso XII", time: "22:00", coords: [37.3910, -5.9975] },
+          { name: "Entrada", time: "23:00", coords: [37.3907, -5.9965] }
+        ]
+      },
+      {
+        name: "La Soledad de San Lorenzo",
+        fullName: "Hermandad de la Soledad de San Lorenzo",
+        waypoints: [
+          { name: "Salida", time: "18:50", coords: [37.3935, -5.9965] },
+          { name: "Trajano", time: "19:00", coords: [37.3930, -5.9970] },
+          { name: "Campana", time: "19:43", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "20:23", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "20:49", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "21:08", coords: [37.3853, -5.9918] },
+          { name: "Alemanes", time: "21:30", coords: [37.3862, -5.9935] },
+          { name: "Álvarez Quintero", time: "22:00", coords: [37.3870, -5.9930] },
+          { name: "Cuna", time: "22:30", coords: [37.3902, -5.9940] },
+          { name: "Las Cortes", time: "23:00", coords: [37.3915, -5.9945] },
+          { name: "Entrada", time: "00:20", coords: [37.3935, -5.9965] }
+        ]
+      }
+    ]
+  },
+
+  "Domingo de Resurrección": {
+    date: "5 de abril",
+    description: "El Domingo de Resurrección pone el punto final a la Semana Santa con la única procesión del día, en un ambiente de alegría.",
+    hermandades: [
+      {
+        name: "La Resurrección",
+        fullName: "Hermandad de la Resurrección",
+        waypoints: [
+          { name: "Salida", time: "08:15", coords: [37.3960, -5.9910] },
+          { name: "San Luis", time: "08:30", coords: [37.3960, -5.9910] },
+          { name: "Relator", time: "09:00", coords: [37.3970, -5.9910] },
+          { name: "Alameda de Hércules", time: "09:30", coords: [37.3950, -5.9960] },
+          { name: "Conde de Barajas", time: "10:00", coords: [37.3940, -5.9965] },
+          { name: "Jesús del Gran Poder", time: "10:30", coords: [37.3935, -5.9960] },
+          { name: "Campana", time: "10:55", coords: [37.3907, -5.9965] },
+          { name: "Plaza", time: "11:35", coords: [37.3858, -5.9935] },
+          { name: "Puerta de San Miguel", time: "12:06", coords: [37.3856, -5.9929] },
+          { name: "Palos", time: "12:25", coords: [37.3853, -5.9918] },
+          { name: "Francos", time: "13:00", coords: [37.3878, -5.9930] },
+          { name: "Pl. Cristo de Burgos", time: "14:00", coords: [37.3920, -5.9895] },
+          { name: "Bustos Tavera", time: "14:30", coords: [37.3950, -5.9905] },
+          { name: "San Luis", time: "15:00", coords: [37.3960, -5.9910] },
+          { name: "Entrada", time: "16:30", coords: [37.3960, -5.9910] }
+        ]
+      }
+    ]
+  }
+};
+
+  </script>
+  <script>
+// ============================================
+// MAPA INTERACTIVO - PROCESIONES SEMANA SANTA SEVILLA 2026
+// ============================================
+
+// --- STATE ---
+let currentDay = "Domingo de Ramos";
+let selectedBrotherhood = null; // null = all visible
+let map;
+let routeLayers = [];
+let markerLayers = [];
+let carreraLayer = null;
+
+// --- CARRERA OFICIAL (approximate route through the center) ---
+const CARRERA_OFICIAL = [
+  [37.3907, -5.9965],  // Campana
+  [37.3900, -5.9962],  // Sierpes start
+  [37.3893, -5.9960],
+  [37.3888, -5.9958],
+  [37.3882, -5.9955],
+  [37.3878, -5.9952],
+  [37.3872, -5.9948],
+  [37.3867, -5.9945],
+  [37.3862, -5.9940],
+  [37.3858, -5.9935],  // Plaza
+  [37.3856, -5.9929],  // San Miguel
+  [37.3854, -5.9924],
+  [37.3853, -5.9918],  // Puerta de Palos
+];
+
+// --- INIT MAP ---
+function initMap() {
+  map = L.map('map', {
+    center: [37.3880, -5.9940],
+    zoom: 15,
+    zoomControl: true,
+    scrollWheelZoom: true,
+    attributionControl: true
+  });
+
+  // Tile layer - clean style
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  // Draw carrera oficial
+  drawCarreraOficial();
+
+  // Initial render
+  renderDay(currentDay);
+}
+
+function drawCarreraOficial() {
+  if (carreraLayer) {
+    map.removeLayer(carreraLayer);
+  }
+  carreraLayer = L.polyline(CARRERA_OFICIAL, {
+    color: '#F5B731',
+    weight: 6,
+    opacity: 0.8,
+    dashArray: '12 6',
+    lineCap: 'round'
+  }).addTo(map);
+
+  // Add label
+  const midPoint = CARRERA_OFICIAL[Math.floor(CARRERA_OFICIAL.length / 2)];
+  L.marker(midPoint, {
+    icon: L.divIcon({
+      className: 'carrera-label',
+      html: '<div style="background:rgba(245,183,49,0.9);color:#1a1a1a;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap;font-family:Source Sans 3,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,0.15);">Carrera Oficial</div>',
+      iconSize: [100, 24],
+      iconAnchor: [50, 12]
+    })
+  }).addTo(map);
+}
+
+// --- RENDER DAY ---
+function renderDay(dayName) {
+  currentDay = dayName;
+  selectedBrotherhood = null;
+
+  // Update button states
+  document.querySelectorAll('.day-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.day === dayName);
+  });
+
+  // Update description
+  const dayData = PROCESSIONS[dayName];
+  document.getElementById('dayDescription').textContent = dayData.description;
+
+  // Render brotherhood chips
+  renderBrotherhoodChips(dayData.hermandades);
+
+  // Render routes on map
+  renderRoutes(dayData.hermandades);
+
+  // Render legend
+  renderLegend(dayData.hermandades);
+
+  // Hide info section
+  document.getElementById('infoSection').style.display = 'none';
+
+  // Fit map to routes
+  fitMapToRoutes(dayData.hermandades);
+}
+
+// --- BROTHERHOOD CHIPS ---
+function renderBrotherhoodChips(hermandades) {
+  const container = document.getElementById('brotherhoodChips');
+  container.innerHTML = '';
+
+  // "All" chip
+  const allChip = document.createElement('button');
+  allChip.className = 'brotherhood-chip active';
+  allChip.innerHTML = '<span class="chip-dot" style="background:var(--gold)"></span>Todas';
+  allChip.addEventListener('click', () => {
+    selectedBrotherhood = null;
+    updateChipStates();
+    renderRoutes(PROCESSIONS[currentDay].hermandades);
+    document.getElementById('infoSection').style.display = 'none';
+    fitMapToRoutes(PROCESSIONS[currentDay].hermandades);
+  });
+  container.appendChild(allChip);
+
+  hermandades.forEach((h, i) => {
+    const color = BROTHERHOOD_COLORS[i % BROTHERHOOD_COLORS.length];
+    const chip = document.createElement('button');
+    chip.className = 'brotherhood-chip';
+    chip.innerHTML = `<span class="chip-dot" style="background:${color}"></span>${h.name}`;
+    chip.addEventListener('click', () => {
+      selectedBrotherhood = h.name;
+      updateChipStates();
+      renderRoutes(PROCESSIONS[currentDay].hermandades, h.name);
+      showBrotherhoodInfo(h, color);
+      fitMapToSingleRoute(h);
+    });
+    container.appendChild(chip);
+  });
+}
+
+function updateChipStates() {
+  document.querySelectorAll('.brotherhood-chip').forEach((chip, idx) => {
+    if (idx === 0) {
+      // "All" chip
+      chip.classList.toggle('active', selectedBrotherhood === null);
+      chip.classList.remove('dimmed');
+    } else {
+      const isSelected = selectedBrotherhood === null || chip.textContent.trim() === selectedBrotherhood;
+      chip.classList.toggle('active', chip.textContent.trim() === selectedBrotherhood);
+      chip.classList.toggle('dimmed', selectedBrotherhood !== null && chip.textContent.trim() !== selectedBrotherhood);
+    }
+  });
+}
+
+// --- RENDER ROUTES ---
+function renderRoutes(hermandades, highlightName = null) {
+  // Clear existing
+  routeLayers.forEach(l => map.removeLayer(l));
+  markerLayers.forEach(l => map.removeLayer(l));
+  routeLayers = [];
+  markerLayers = [];
+
+  hermandades.forEach((h, i) => {
+    const color = BROTHERHOOD_COLORS[i % BROTHERHOOD_COLORS.length];
+    const isHighlighted = highlightName === null || h.name === highlightName;
+    const opacity = isHighlighted ? 0.85 : 0.15;
+    const weight = isHighlighted ? 4 : 2;
+
+    // Draw route polyline
+    const coords = h.waypoints.map(wp => wp.coords);
+    const polyline = L.polyline(coords, {
+      color: color,
+      weight: weight,
+      opacity: opacity,
+      lineJoin: 'round',
+      lineCap: 'round'
+    }).addTo(map);
+    routeLayers.push(polyline);
+
+    // Draw markers only for highlighted routes
+    if (isHighlighted && (highlightName !== null || hermandades.length <= 3)) {
+      h.waypoints.forEach((wp, wpIdx) => {
+        const isStart = wpIdx === 0;
+        const isEnd = wpIdx === h.waypoints.length - 1;
+        let markerSize, markerClass;
+
+        if (isStart || isEnd) {
+          markerSize = 20;
+          markerClass = isStart ? 'marker-start' : 'marker-end';
+        } else {
+          markerSize = 10;
+          markerClass = 'marker-waypoint';
+        }
+
+        const icon = L.divIcon({
+          className: 'custom-marker',
+          html: `<div class="${markerClass}" style="background:${color};${isStart || isEnd ? '' : `border-color:${color};background:white;`}">
+            ${isStart ? '▶' : isEnd ? '■' : ''}
+          </div>`,
+          iconSize: [markerSize, markerSize],
+          iconAnchor: [markerSize/2, markerSize/2]
+        });
+
+        const marker = L.marker(wp.coords, { icon: icon }).addTo(map);
+
+        // Popup
+        const popupContent = `
+          <div class="popup-header">
+            <h4>${wp.name}</h4>
+            <div class="popup-brotherhood">${h.name}</div>
+          </div>
+          <div class="popup-body">
+            <div class="popup-time">${wp.time} h</div>
+            <div class="popup-label">${isStart ? 'Hora de salida' : isEnd ? 'Hora de entrada' : 'Paso de Cruz de Guía'}</div>
+          </div>
+        `;
+        marker.bindPopup(popupContent, { className: 'custom-popup' });
+
+        markerLayers.push(marker);
+      });
+    } else if (highlightName === null) {
+      // Show start markers only when viewing all
+      const startWp = h.waypoints[0];
+      const icon = L.divIcon({
+        className: 'custom-marker',
+        html: `<div class="marker-start" style="background:${color};">▶</div>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
+      });
+      const marker = L.marker(startWp.coords, { icon: icon }).addTo(map);
+      marker.bindPopup(`
+        <div class="popup-header">
+          <h4>${h.name}</h4>
+          <div class="popup-brotherhood">Salida: ${startWp.time} h</div>
+        </div>
+        <div class="popup-body">
+          <div class="popup-time">${startWp.time} h</div>
+          <div class="popup-label">Hora de salida</div>
+        </div>
+      `, { className: 'custom-popup' });
+      marker.on('click', () => {
+        selectedBrotherhood = h.name;
+        updateChipStates();
+        renderRoutes(PROCESSIONS[currentDay].hermandades, h.name);
+        showBrotherhoodInfo(h, color);
+        fitMapToSingleRoute(h);
+      });
+      markerLayers.push(marker);
+    }
+  });
+}
+
+// --- FIT MAP ---
+function fitMapToRoutes(hermandades) {
+  const allCoords = [];
+  hermandades.forEach(h => {
+    h.waypoints.forEach(wp => {
+      allCoords.push(wp.coords);
+    });
+  });
+  if (allCoords.length > 0) {
+    const bounds = L.latLngBounds(allCoords);
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+  }
+}
+
+function fitMapToSingleRoute(hermandad) {
+  const coords = hermandad.waypoints.map(wp => wp.coords);
+  if (coords.length > 0) {
+    const bounds = L.latLngBounds(coords);
+    map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
+  }
+}
+
+// --- LEGEND ---
+function renderLegend(hermandades) {
+  const container = document.getElementById('legendItems');
+  container.innerHTML = '';
+
+  hermandades.forEach((h, i) => {
+    const color = BROTHERHOOD_COLORS[i % BROTHERHOOD_COLORS.length];
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<span class="legend-color" style="background:${color}"></span>${h.name}`;
+    item.addEventListener('click', () => {
+      selectedBrotherhood = h.name;
+      updateChipStates();
+      renderRoutes(PROCESSIONS[currentDay].hermandades, h.name);
+      showBrotherhoodInfo(h, color);
+      fitMapToSingleRoute(h);
+    });
+    container.appendChild(item);
+  });
+}
+
+// --- INFO PANEL ---
+function showBrotherhoodInfo(hermandad, color) {
+  const section = document.getElementById('infoSection');
+  const title = document.getElementById('infoTitle');
+  const timeline = document.getElementById('infoTimeline');
+
+  section.style.display = 'block';
+  title.textContent = `${hermandad.name} — Recorrido completo`;
+  title.style.borderColor = color;
+
+  // Carrera oficial points
+  const carreraPoints = ['Campana', 'Sierpes', 'Plaza', 'Puerta de San Miguel', 'San Miguel', 'Puerta de Palos', 'Palos'];
+
+  timeline.innerHTML = hermandad.waypoints.map((wp, idx) => {
+    const isStart = idx === 0;
+    const isEnd = idx === hermandad.waypoints.length - 1;
+    const isCarrera = carreraPoints.some(cp => wp.name.includes(cp));
+    let className = 'timeline-stop';
+    if (isStart) className += ' is-start';
+    else if (isEnd) className += ' is-end';
+    else if (isCarrera) className += ' is-carrera';
+
+    return `
+      <div class="${className}">
+        <div class="timeline-dot-wrapper">
+          <div class="timeline-dot" ${isStart || isEnd ? '' : isCarrera ? '' : `style="background:${color};box-shadow:0 0 0 2px ${color}"`}></div>
+        </div>
+        <div class="timeline-content">
+          <div class="timeline-time">${wp.time} h</div>
+          <div class="timeline-name">
+            ${wp.name}
+            ${isCarrera && !isStart && !isEnd ? '<span class="timeline-carrera-badge">Carrera Oficial</span>' : ''}
+            ${isStart ? '<span class="timeline-carrera-badge" style="background:#f0e6e8;color:#6B1D2A;">Salida</span>' : ''}
+            ${isEnd ? '<span class="timeline-carrera-badge" style="background:#e8e8e8;color:#1a1a1a;">Entrada</span>' : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Scroll to info
+  setTimeout(() => {
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 200);
+}
+
+// --- EVENT LISTENERS ---
+function setupEventListeners() {
+  // Day selector buttons
+  document.querySelectorAll('.day-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      renderDay(btn.dataset.day);
+    });
+  });
+}
+
+// --- INIT ---
+document.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  setupEventListeners();
+});
+
+  </script>
+</body>
+</html>
